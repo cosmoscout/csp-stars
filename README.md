@@ -1,6 +1,6 @@
 # Stars for CosmoScout VR
 
-A CosmoSout VR plugin which draws 3D-stars loaded from catalogues. This plugin is built as part of CosmoScout's build process. See the [main repository](https://github.com/cosmoscout/cosmoscout-vr) for instructions.
+A CosmoSout VR plugin which draws 3D-stars loaded from catalogues. For now, it supports the Tycho, the Tycho2 and the Hipparcos catalogue. This plugin is built as part of CosmoScout's build process. See the [main repository](https://github.com/cosmoscout/cosmoscout-vr) for instructions.
 
 ## Configuration
 
