@@ -149,10 +149,10 @@ void Plugin::init() {
 
   mSceneGraph->GetRoot()->AddChild(mStarsTransform.get());
 
+  mStarsNode = mSceneGraph->NewOpenGLNode(mStarsTransform.get(), mStars.get());
+
   VistaOpenSGMaterialTools::SetSortKeyOnSubtree(
       mStarsTransform.get(), static_cast<int>(cs::utils::DrawOrder::eStars));
-
-  mStarsNode = mSceneGraph->NewOpenGLNode(mStarsTransform.get(), mStars.get());
 
   mProperties->mEnabled.onChange().connect(
       [this](bool val) { this->mStarsNode->SetIsEnabled(val); });
