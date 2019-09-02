@@ -33,7 +33,7 @@ namespace csp::stars {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void from_json(const nlohmann::json& j, Plugin::Settings& o) {
-  cs::core::parseSettingsSection("csp-stars", [&] {
+  cs::core::parseSection("csp-stars", [&] {
     o.mMinMagnitude       = cs::core::parseProperty<double>("minMagnitude", j);
     o.mMaxMagnitude       = cs::core::parseProperty<double>("maxMagnitude", j);
     o.mMinSize            = cs::core::parseProperty<double>("minSize", j);
@@ -56,30 +56,11 @@ void from_json(const nlohmann::json& j, Plugin::Settings& o) {
 
     o.mStarTexture = cs::core::parseProperty<std::string>("starTexture", j);
 
-    auto iter = j.find("cacheFile");
-    if (iter != j.end()) {
-      o.mCacheFile = iter->get<std::optional<std::string>>();
-    }
-
-    iter = j.find("gaiaCatalog");
-    if (iter != j.end()) {
-      o.mGaiaCatalog = iter->get<std::optional<std::string>>();
-    }
-
-    iter = j.find("hipparcosCatalog");
-    if (iter != j.end()) {
-      o.mHipparcosCatalog = iter->get<std::optional<std::string>>();
-    }
-
-    iter = j.find("tychoCatalog");
-    if (iter != j.end()) {
-      o.mTychoCatalog = iter->get<std::optional<std::string>>();
-    }
-
-    iter = j.find("tycho2Catalog");
-    if (iter != j.end()) {
-      o.mTycho2Catalog = iter->get<std::optional<std::string>>();
-    }
+    o.mCacheFile        = cs::core::parseOptional<std::string>("cacheFile", j);
+    o.mGaiaCatalog      = cs::core::parseOptional<std::string>("gaiaCatalog", j);
+    o.mHipparcosCatalog = cs::core::parseOptional<std::string>("hipparcosCatalog", j);
+    o.mTychoCatalog     = cs::core::parseOptional<std::string>("tychoCatalog", j);
+    o.mTycho2Catalog    = cs::core::parseOptional<std::string>("tycho2Catalog", j);
   });
 }
 
