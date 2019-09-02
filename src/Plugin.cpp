@@ -33,52 +33,54 @@ namespace csp::stars {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void from_json(const nlohmann::json& j, Plugin::Settings& o) {
-  o.mMinMagnitude       = j.at("minMagnitude").get<double>();
-  o.mMaxMagnitude       = j.at("maxMagnitude").get<double>();
-  o.mMinSize            = j.at("minSize").get<double>();
-  o.mMaxSize            = j.at("maxSize").get<double>();
-  o.mMinOpacity         = j.at("minOpacity").get<double>();
-  o.mMaxOpacity         = j.at("maxOpacity").get<double>();
-  o.mScalingExponent    = j.at("scalingExponent").get<double>();
-  o.mBackgroundTexture1 = j.at("backgroundTexture1").get<std::string>();
-  o.mBackgroundTexture2 = j.at("backgroundTexture2").get<std::string>();
+  cs::core::parseSettingsSection("csp-stars", [&] {
+    o.mMinMagnitude       = cs::core::parseProperty<double>("minMagnitude", j);
+    o.mMaxMagnitude       = cs::core::parseProperty<double>("maxMagnitude", j);
+    o.mMinSize            = cs::core::parseProperty<double>("minSize", j);
+    o.mMaxSize            = cs::core::parseProperty<double>("maxSize", j);
+    o.mMinOpacity         = cs::core::parseProperty<double>("minOpacity", j);
+    o.mMaxOpacity         = cs::core::parseProperty<double>("maxOpacity", j);
+    o.mScalingExponent    = cs::core::parseProperty<double>("scalingExponent", j);
+    o.mBackgroundTexture1 = cs::core::parseProperty<std::string>("backgroundTexture1", j);
+    o.mBackgroundTexture2 = cs::core::parseProperty<std::string>("backgroundTexture2", j);
 
-  auto b1 = j.at("backgroundColor1");
-  for (int i = 0; i < 4; ++i) {
-    o.mBackgroundColor1[i] = b1.at(i);
-  }
+    auto b1 = j.at("backgroundColor1");
+    for (int i = 0; i < 4; ++i) {
+      o.mBackgroundColor1[i] = b1.at(i);
+    }
 
-  auto b2 = j.at("backgroundColor2");
-  for (int i = 0; i < 4; ++i) {
-    o.mBackgroundColor2[i] = b2.at(i);
-  }
+    auto b2 = j.at("backgroundColor2");
+    for (int i = 0; i < 4; ++i) {
+      o.mBackgroundColor2[i] = b2.at(i);
+    }
 
-  o.mStarTexture = j.at("starTexture").get<std::string>();
+    o.mStarTexture = cs::core::parseProperty<std::string>("starTexture", j);
 
-  auto iter = j.find("cacheFile");
-  if (iter != j.end()) {
-    o.mCacheFile = iter->get<std::optional<std::string>>();
-  }
+    auto iter = j.find("cacheFile");
+    if (iter != j.end()) {
+      o.mCacheFile = iter->get<std::optional<std::string>>();
+    }
 
-  iter = j.find("gaiaCatalog");
-  if (iter != j.end()) {
-    o.mGaiaCatalog = iter->get<std::optional<std::string>>();
-  }
+    iter = j.find("gaiaCatalog");
+    if (iter != j.end()) {
+      o.mGaiaCatalog = iter->get<std::optional<std::string>>();
+    }
 
-  iter = j.find("hipparcosCatalog");
-  if (iter != j.end()) {
-    o.mHipparcosCatalog = iter->get<std::optional<std::string>>();
-  }
+    iter = j.find("hipparcosCatalog");
+    if (iter != j.end()) {
+      o.mHipparcosCatalog = iter->get<std::optional<std::string>>();
+    }
 
-  iter = j.find("tychoCatalog");
-  if (iter != j.end()) {
-    o.mTychoCatalog = iter->get<std::optional<std::string>>();
-  }
+    iter = j.find("tychoCatalog");
+    if (iter != j.end()) {
+      o.mTychoCatalog = iter->get<std::optional<std::string>>();
+    }
 
-  iter = j.find("tycho2Catalog");
-  if (iter != j.end()) {
-    o.mTycho2Catalog = iter->get<std::optional<std::string>>();
-  }
+    iter = j.find("tycho2Catalog");
+    if (iter != j.end()) {
+      o.mTycho2Catalog = iter->get<std::optional<std::string>>();
+    }
+  });
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
