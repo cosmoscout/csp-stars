@@ -57,11 +57,6 @@ class Stars : public IVistaOpenGLDraw {
   Stars(const std::map<CatalogType, std::string>& mCatalogs, const std::string& sStarTextureFile,
       const std::string& sCacheFile = "star_cache.dat");
 
-  /// Creates a new instance of this class.
-  /// @param sConfigFile     An XML file containing values for configuring the stars. See demo_01
-  ///                        for an example.
-  explicit Stars(const std::string& sConfigFile);
-
   ~Stars() override;
 
   /// Stars below this magnitude will not be drawn.
@@ -109,12 +104,6 @@ class Stars : public IVistaOpenGLDraw {
   /// @param fValue    Should be greater or equal to one.
   void  setScalingExponent(float fValue);
   float getScalingExponent() const;
-
-  /// Draws the stars in 3D space.
-  /// Default is false.
-  /// @param bValue    If set to true, stars are drawn in 3D space.
-  void setDraw3D(bool bValue);
-  bool getDraw3D() const;
 
   /// Adds a skydome texture. The given texture is projected via equirectangular projection onto the
   /// background and blended additively.
@@ -197,7 +186,6 @@ class Stars : public IVistaOpenGLDraw {
   float mMinOpacity;
   float mMaxOpacity;
   float mScalingExponent;
-  float mDraw3D;
 
   static const int cCacheVersion;
   static const int cColumnMapping[cs::utils::enumCast(CatalogType::eCount)]

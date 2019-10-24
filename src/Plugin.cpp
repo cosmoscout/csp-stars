@@ -122,7 +122,6 @@ void Plugin::init() {
   mStars->setMaxOpacity((float)mPluginSettings.mMaxOpacity);
 
   mStars->setScalingExponent((float)mPluginSettings.mScalingExponent);
-  mStars->setDraw3D(true);
 
   // add to scenegraph
   mStarsTransform = std::make_shared<cs::scene::CelestialAnchorNode>(

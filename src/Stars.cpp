@@ -24,8 +24,6 @@
 #include <VistaOGLExt/VistaGLSLShader.h>
 #include <VistaOGLExt/VistaVertexArrayObject.h>
 
-#include <VistaTools/tinyXML/tinyxml.h>
-
 #include <VistaInterProcComm/Connections/VistaByteBufferDeSerializer.h>
 #include <VistaInterProcComm/Connections/VistaByteBufferSerializer.h>
 
@@ -81,114 +79,8 @@ Stars::Stars(const std::map<CatalogType, std::string>& mCatalogs,
     , mMaxSize(3.f)
     , mMinOpacity(0.7f)
     , mMaxOpacity(1.f)
-    , mScalingExponent(4.f)
-    , mDraw3D(false) {
+    , mScalingExponent(4.f) {
   init(sStarTextureFile, sCacheFile);
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-Stars::Stars(const std::string& sConfigFile)
-    : mBackgroundColor1()
-    , mBackgroundColor2()
-    , mCatalogs()
-    , mLoadedMinMagnitude(std::numeric_limits<float>::max())
-    , mLoadedMaxMagnitude(std::numeric_limits<float>::min())
-    , mMinMagnitude(-15.f)
-    , mMaxMagnitude(10.f)
-    , mMinSize(0.1f)
-    , mMaxSize(3.f)
-    , mMinOpacity(0.7f)
-    , mMaxOpacity(1.f)
-    , mScalingExponent(4.f)
-    , mDraw3D(false) {
-
-  VistaXML::TiXmlDocument xDoc(sConfigFile);
-
-  if (!xDoc.LoadFile()) {
-    std::cout << "Failed to load star config file " << sConfigFile << ": "
-              << "Cannont open file!" << std::endl;
-    return;
-  }
-
-  // Get First Element
-  const VistaXML::TiXmlElement* pRoot(xDoc.FirstChildElement());
-
-  // Read Data
-  if (std::string(pRoot->Value()) != "StarConfig") {
-    std::cout << "Failed to read star config file " << sConfigFile << "!" << std::endl;
-    return;
-  }
-
-  const VistaXML::TiXmlElement* pProperty(pRoot->FirstChildElement());
-
-  std::string sBackgroundTexture1, sBackgroundTexture2, sStarTexture, sSpectralColors,
-      sCacheFile("star_cache.dat");
-
-  while (pProperty != nullptr) {
-    if (std::string(pProperty->Value()) == "Property") {
-      std::string       sName(pProperty->Attribute("Name"));
-      std::stringstream ssValue(pProperty->Attribute("Value"));
-      if (sName == "MinMagnitude")
-        ssValue >> mMinMagnitude;
-      else if (sName == "MaxMagnitude")
-        ssValue >> mMaxMagnitude;
-      else if (sName == "MinSize")
-        ssValue >> mMinSize;
-      else if (sName == "MaxSize")
-        ssValue >> mMaxSize;
-      else if (sName == "MinOpacity")
-        ssValue >> mMinOpacity;
-      else if (sName == "MaxOpacity")
-        ssValue >> mMaxOpacity;
-      else if (sName == "ScalingExponent")
-        ssValue >> mScalingExponent;
-      else if (sName == "Draw3D")
-        ssValue >> mDraw3D;
-      else if (sName == "BackgroundTexture1")
-        ssValue >> sBackgroundTexture1;
-      else if (sName == "BackgroundTexture2")
-        ssValue >> sBackgroundTexture2;
-      else if (sName == "StarTexture")
-        ssValue >> sStarTexture;
-      else if (sName == "HipparcosCatalog")
-        ssValue >> mCatalogs[CatalogType::eHipparcos];
-      else if (sName == "TychoCatalog")
-        ssValue >> mCatalogs[CatalogType::eTycho];
-      else if (sName == "Tycho2Catalog")
-        ssValue >> mCatalogs[CatalogType::eTycho2];
-      else if (sName == "BackgroundColor1") {
-        ssValue >> mBackgroundColor1[0] >> mBackgroundColor1[1] >> mBackgroundColor1[2] >>
-            mBackgroundColor1[3];
-      } else if (sName == "BackgroundColor2") {
-        ssValue >> mBackgroundColor2[0] >> mBackgroundColor2[1] >> mBackgroundColor2[2] >>
-            mBackgroundColor2[3];
-      } else {
-        std::cout << "Ignoring invalid entity " << sName << " while reading star config file "
-                  << sConfigFile << "!" << std::endl;
-      }
-    } else {
-      std::cout << "Ignoring invalid entity " << pProperty->Value()
-                << " while reading star config file " << sConfigFile << "!" << std::endl;
-    }
-
-    pProperty = pProperty->NextSiblingElement();
-  }
-
-  if (!sBackgroundTexture1.empty())
-    setBackgroundTexture1(sBackgroundTexture1);
-  if (!sBackgroundTexture2.empty())
-    setBackgroundTexture2(sBackgroundTexture2);
-
-  // mCatalogs =
-
-  if (sStarTexture.empty()) {
-    std::cout << "Failed to load star config file " << sConfigFile << ": "
-              << "StarTexture has to be set!" << std::endl;
-    return;
-  }
-
-  init(sStarTexture, sCacheFile);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -284,18 +176,6 @@ void Stars::setScalingExponent(float fValue) {
 
 float Stars::getScalingExponent() const {
   return mScalingExponent;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void Stars::setDraw3D(bool bValue) {
-  mDraw3D = bValue;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-bool Stars::getDraw3D() const {
-  return (bool)mDraw3D;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -425,7 +305,6 @@ bool Stars::Do() {
   mStarShader->SetUniform(mStarShader->GetUniformLocation("fMinSize"), mMinSize);
   mStarShader->SetUniform(mStarShader->GetUniformLocation("fMaxSize"), mMaxSize);
   mStarShader->SetUniform(mStarShader->GetUniformLocation("fScalingExponent"), mScalingExponent);
-  mStarShader->SetUniform(mStarShader->GetUniformLocation("bDraw3D"), mDraw3D);
 
   VistaTransformMatrix matInverseMV(matModelView.GetInverted());
 
