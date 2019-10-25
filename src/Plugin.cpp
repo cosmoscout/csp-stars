@@ -33,13 +33,6 @@ namespace csp::stars {
 
 void from_json(const nlohmann::json& j, Plugin::Settings& o) {
   cs::core::parseSection("csp-stars", [&] {
-    o.mMinMagnitude       = cs::core::parseProperty<double>("minMagnitude", j);
-    o.mMaxMagnitude       = cs::core::parseProperty<double>("maxMagnitude", j);
-    o.mMinSize            = cs::core::parseProperty<double>("minSize", j);
-    o.mMaxSize            = cs::core::parseProperty<double>("maxSize", j);
-    o.mMinOpacity         = cs::core::parseProperty<double>("minOpacity", j);
-    o.mMaxOpacity         = cs::core::parseProperty<double>("maxOpacity", j);
-    o.mScalingExponent    = cs::core::parseProperty<double>("scalingExponent", j);
     o.mBackgroundTexture1 = cs::core::parseProperty<std::string>("backgroundTexture1", j);
     o.mBackgroundTexture2 = cs::core::parseProperty<std::string>("backgroundTexture2", j);
 
@@ -56,7 +49,6 @@ void from_json(const nlohmann::json& j, Plugin::Settings& o) {
     o.mStarTexture = cs::core::parseProperty<std::string>("starTexture", j);
 
     o.mCacheFile        = cs::core::parseOptional<std::string>("cacheFile", j);
-    o.mGaiaCatalog      = cs::core::parseOptional<std::string>("gaiaCatalog", j);
     o.mHipparcosCatalog = cs::core::parseOptional<std::string>("hipparcosCatalog", j);
     o.mTychoCatalog     = cs::core::parseOptional<std::string>("tychoCatalog", j);
     o.mTycho2Catalog    = cs::core::parseOptional<std::string>("tycho2Catalog", j);
@@ -78,10 +70,6 @@ void Plugin::init() {
   mPluginSettings = mAllSettings->mPlugins.at("csp-stars");
 
   std::map<Stars::CatalogType, std::string> catalogs;
-
-  if (mPluginSettings.mGaiaCatalog) {
-    catalogs[Stars::CatalogType::eGaia] = *mPluginSettings.mGaiaCatalog;
-  }
 
   if (mPluginSettings.mHipparcosCatalog) {
     catalogs[Stars::CatalogType::eHipparcos] = *mPluginSettings.mHipparcosCatalog;
@@ -112,17 +100,6 @@ void Plugin::init() {
   mStars->setBackgroundColor1(VistaColor(bg1.r, bg1.g, bg1.b, bg1.a));
   mStars->setBackgroundColor2(VistaColor(bg2.r, bg2.g, bg2.b, bg2.a));
 
-  mStars->setMinMagnitude((float)mPluginSettings.mMinMagnitude);
-  mStars->setMaxMagnitude((float)mPluginSettings.mMaxMagnitude);
-
-  mStars->setMinSize((float)mPluginSettings.mMinSize);
-  mStars->setMaxSize((float)mPluginSettings.mMaxSize);
-
-  mStars->setMinOpacity((float)mPluginSettings.mMinOpacity);
-  mStars->setMaxOpacity((float)mPluginSettings.mMaxOpacity);
-
-  mStars->setScalingExponent((float)mPluginSettings.mScalingExponent);
-
   // add to scenegraph
   mStarsTransform = std::make_shared<cs::scene::CelestialAnchorNode>(
       mSceneGraph->GetRoot(), mSceneGraph->GetNodeBridge(), "", "Solar System Barycenter", "J2000");
@@ -141,6 +118,8 @@ void Plugin::init() {
   mGuiManager->addSettingsSectionToSideBarFromHTML(
       "Stars", "star", "../share/resources/gui/stars_settings.html");
 
+  mGuiManager->addScriptToSideBarFromJS("../share/resources/gui/js/stars_settings.js");
+
   mGuiManager->getSideBar()->registerCallback<bool>(
       "set_enable_stars", ([this](bool value) { mProperties->mEnabled = value; }));
 
@@ -149,6 +128,38 @@ void Plugin::init() {
 
   mGuiManager->getSideBar()->registerCallback<bool>("set_enable_stars_figures",
       ([this](bool value) { mProperties->mEnableStarFigures = value; }));
+
+  mGuiManager->getSideBar()->registerCallback<double>("set_star_luminance_multiplicator",
+      ([this](double value) { mProperties->mLuminanceMultiplicator = value; }));
+
+  mGuiManager->getSideBar()->registerCallback<double>(
+      "set_star_size", ([this](double value) { mStars->setSolidAngle(value); }));
+
+  mGuiManager->getSideBar()->registerCallback<double, double>(
+      "set_star_magnitude", ([this](double val, double handle) {
+        if (handle == 0.0)
+          mStars->setMinMagnitude(val);
+        else
+          mStars->setMaxMagnitude(val);
+      }));
+
+  mGuiManager->getSideBar()->registerCallback(
+      "set_star_draw_mode_0", ([this]() { mStars->setDrawMode(Stars::ePoint); }));
+
+  mGuiManager->getSideBar()->registerCallback(
+      "set_star_draw_mode_1", ([this]() { mStars->setDrawMode(Stars::eSmoothPoint); }));
+
+  mGuiManager->getSideBar()->registerCallback(
+      "set_star_draw_mode_2", ([this]() { mStars->setDrawMode(Stars::eDisc); }));
+
+  mGuiManager->getSideBar()->registerCallback(
+      "set_star_draw_mode_3", ([this]() { mStars->setDrawMode(Stars::eSmoothDisc); }));
+
+  mGuiManager->getSideBar()->registerCallback(
+      "set_star_draw_mode_4", ([this]() { mStars->setDrawMode(Stars::eSprite); }));
+
+  mGraphicsEngine->pEnableHDR.onChange().connect(
+      [this](bool value) { mStars->setEnableHDR(value); });
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -167,10 +178,11 @@ void Plugin::deInit() {
 void Plugin::update() {
   float fIntensity = mGraphicsEngine->pApproximateSceneBrightness.get();
 
-  mStars->setMaxSize((float)mPluginSettings.mMaxSize * fIntensity);
-  mStars->setMinSize((float)mPluginSettings.mMinSize * fIntensity);
-  mStars->setMaxOpacity((float)mPluginSettings.mMaxOpacity * fIntensity);
-  mStars->setMinOpacity((float)mPluginSettings.mMinOpacity * fIntensity);
+  if (mGraphicsEngine->pEnableHDR.get()) {
+    fIntensity = 1.f;
+  }
+
+  mStars->setLuminanceMultiplicator(fIntensity * mProperties->mLuminanceMultiplicator.get());
   mStars->setBackgroundColor1(VistaColor(
       0.5f, 0.8f, 1.f, 0.3f * fIntensity * (mProperties->mEnableCelestialGrid.get() ? 1.f : 0.f)));
   mStars->setBackgroundColor2(VistaColor(

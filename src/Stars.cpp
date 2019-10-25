@@ -20,10 +20,6 @@
 #include <VistaOGLExt/VistaOGLUtils.h>
 #include <VistaOGLExt/VistaTexture.h>
 
-#include <VistaOGLExt/VistaBufferObject.h>
-#include <VistaOGLExt/VistaGLSLShader.h>
-#include <VistaOGLExt/VistaVertexArrayObject.h>
-
 #include <VistaInterProcComm/Connections/VistaByteBufferDeSerializer.h>
 #include <VistaInterProcComm/Connections/VistaByteBufferSerializer.h>
 
@@ -38,7 +34,7 @@ namespace {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-bool FromString(std::string const& v, T& out) {
+bool fromString(std::string const& v, T& out) {
   std::istringstream iss(v);
   iss >> out;
   return (iss.rdstate() & std::stringstream::failbit) == 0;
@@ -54,8 +50,7 @@ const int Stars::cColumnMapping[cs::utils::enumCast(CatalogType::eCount)]
                                [cs::utils::enumCast(CatalogColumn::eCount)] = {
                                    {34, 32, 11, 8, 9, 31}, // CatalogType::eHipparcos
                                    {34, 32, 11, 8, 9, 31}, // CatalogType::eTycho
-                                   {19, 17, -1, 2, 3, 23}, // CatalogType::eTycho2
-                                   {50, 55, 9, 5, 7, -1}   // CatalogType::eGaia
+                                   {19, 17, -1, 2, 3, 23}  // CatalogType::eTycho2
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -66,38 +61,58 @@ const int Stars::cCacheVersion = 3;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Stars::Stars(const std::map<CatalogType, std::string>& mCatalogs,
-    const std::string& sStarTextureFile, const std::string& sCacheFile)
-    : mBackgroundColor1()
-    , mBackgroundColor2()
-    , mCatalogs(mCatalogs)
-    , mLoadedMinMagnitude(std::numeric_limits<float>::max())
-    , mLoadedMaxMagnitude(std::numeric_limits<float>::min())
-    , mMinMagnitude(-15.f)
-    , mMaxMagnitude(10.f)
-    , mMinSize(0.1f)
-    , mMaxSize(3.f)
-    , mMinOpacity(0.7f)
-    , mMaxOpacity(1.f)
-    , mScalingExponent(4.f) {
-  init(sStarTextureFile, sCacheFile);
+Stars::Stars(const std::map<CatalogType, std::string>& catalogs, const std::string& starTexture,
+    const std::string& cacheFile)
+    : mCatalogs(catalogs) {
+  init(starTexture, cacheFile);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Stars::~Stars() {
-  delete mStarShader;
-  delete mBackgroundShader;
-  delete mStarVAO;
-  delete mStarVBO;
-  delete mBackgroundVAO;
-  delete mBackgroundVBO;
+void Stars::setDrawMode(Stars::DrawMode value) {
+  if (mDrawMode != value) {
+    mShaderDirty = true;
+    mDrawMode    = value;
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Stars::setMinMagnitude(float fValue) {
-  mMinMagnitude = fValue;
+Stars::DrawMode Stars::getDrawMode() const {
+  return mDrawMode;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Stars::setEnableHDR(bool value) {
+  if (mEnableHDR != value) {
+    mShaderDirty = true;
+    mEnableHDR   = value;
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Stars::setSolidAngle(float value) {
+  mSolidAngle = value;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+float Stars::getSolidAngle() const {
+  return mSolidAngle;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+bool Stars::getEnableHDR() const {
+  return mEnableHDR;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Stars::setMinMagnitude(float value) {
+  mMinMagnitude = value;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -108,8 +123,8 @@ float Stars::getMinMagnitude() const {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Stars::setMaxMagnitude(float fValue) {
-  mMaxMagnitude = fValue;
+void Stars::setMaxMagnitude(float value) {
+  mMaxMagnitude = value;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -120,68 +135,20 @@ float Stars::getMaxMagnitude() const {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Stars::setMinSize(float fValue) {
-  mMinSize = fValue;
+void Stars::setLuminanceMultiplicator(float value) {
+  mLuminanceMultiplicator = value;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-float Stars::getMinSize() const {
-  return mMinSize;
+float Stars::getLuminanceMultiplicator() const {
+  return mLuminanceMultiplicator;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Stars::setMaxSize(float fValue) {
-  mMaxSize = fValue;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-float Stars::getMaxSize() const {
-  return mMaxSize;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void Stars::setMinOpacity(float fValue) {
-  mMinOpacity = fValue;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-float Stars::getMinOpacity() const {
-  return mMinOpacity;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void Stars::setMaxOpacity(float fValue) {
-  mMaxOpacity = fValue;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-float Stars::getMaxOpacity() const {
-  return mMaxOpacity;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void Stars::setScalingExponent(float fValue) {
-  mScalingExponent = fValue;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-float Stars::getScalingExponent() const {
-  return mScalingExponent;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void Stars::setBackgroundColor1(const VistaColor& cValue) {
-  mBackgroundColor1 = cValue;
+void Stars::setBackgroundColor1(const VistaColor& value) {
+  mBackgroundColor1 = value;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -192,8 +159,8 @@ const VistaColor& Stars::getBackgroundColor1() const {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Stars::setBackgroundColor2(const VistaColor& cValue) {
-  mBackgroundColor2 = cValue;
+void Stars::setBackgroundColor2(const VistaColor& value) {
+  mBackgroundColor2 = value;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -204,25 +171,25 @@ const VistaColor& Stars::getBackgroundColor2() const {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Stars::setStarTexture(const std::string& sFilename) {
-  if (!sFilename.empty()) {
-    mStarTexture = cs::graphics::TextureLoader::loadFromFile(sFilename);
+void Stars::setStarTexture(const std::string& filename) {
+  if (!filename.empty()) {
+    mStarTexture = cs::graphics::TextureLoader::loadFromFile(filename);
   }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Stars::setBackgroundTexture1(const std::string& sFilename) {
-  if (!sFilename.empty()) {
-    mBackgroundTexture1 = cs::graphics::TextureLoader::loadFromFile(sFilename);
+void Stars::setBackgroundTexture1(const std::string& filename) {
+  if (!filename.empty()) {
+    mBackgroundTexture1 = cs::graphics::TextureLoader::loadFromFile(filename);
   }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Stars::setBackgroundTexture2(const std::string& sFilename) {
-  if (!sFilename.empty()) {
-    mBackgroundTexture2 = cs::graphics::TextureLoader::loadFromFile(sFilename);
+void Stars::setBackgroundTexture2(const std::string& filename) {
+  if (!filename.empty()) {
+    mBackgroundTexture2 = cs::graphics::TextureLoader::loadFromFile(filename);
   }
 }
 
@@ -230,13 +197,13 @@ void Stars::setBackgroundTexture2(const std::string& sFilename) {
 
 bool Stars::Do() {
   // save current state of the OpenGL state machine
-  glPushAttrib(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+  glPushAttrib(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
   glDepthMask(GL_FALSE);
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_BLEND);
   glBlendFunc(GL_ONE, GL_ONE);
 
-  // get matrices ------------------------------------------------------------
+  // get matrices
   GLfloat glMat[16];
   glGetFloatv(GL_MODELVIEW_MATRIX, &glMat[0]);
   VistaTransformMatrix matModelView(glMat, true);
@@ -244,7 +211,46 @@ bool Stars::Do() {
   glGetFloatv(GL_PROJECTION_MATRIX, &glMat[0]);
   VistaTransformMatrix matProjection(glMat, true);
 
-  // draw background ---------------------------------------------------------
+  if (mShaderDirty) {
+    std::string defines = "#version 330\n";
+
+    if (mEnableHDR) {
+      defines += "#define ENABLE_HDR\n";
+    }
+
+    if (mDrawMode == DrawMode::eSmoothPoint) {
+      defines += "#define DRAWMODE_SMOOTH_POINT\n";
+    } else if (mDrawMode == DrawMode::ePoint) {
+      defines += "#define DRAWMODE_POINT\n";
+    } else if (mDrawMode == DrawMode::eDisc) {
+      defines += "#define DRAWMODE_DISC\n";
+    } else if (mDrawMode == DrawMode::eSmoothDisc) {
+      defines += "#define DRAWMODE_SMOOTH_DISC\n";
+    } else if (mDrawMode == DrawMode::eSprite) {
+      defines += "#define DRAWMODE_SPRITE\n";
+    }
+
+    mStarShader.reset(new VistaGLSLShader());
+    if (mDrawMode == DrawMode::ePoint || mDrawMode == DrawMode::eSmoothPoint) {
+      mStarShader->InitVertexShaderFromString(defines + cStarsSnippets + cStarsVertOnePixel);
+      mStarShader->InitFragmentShaderFromString(defines + cStarsSnippets + cStarsFragOnePixel);
+    } else {
+      mStarShader->InitVertexShaderFromString(defines + cStarsSnippets + cStarsVert);
+      mStarShader->InitGeometryShaderFromString(defines + cStarsSnippets + cStarsGeom);
+      mStarShader->InitFragmentShaderFromString(defines + cStarsSnippets + cStarsFrag);
+    }
+
+    mStarShader->Link();
+
+    mBackgroundShader.reset(new VistaGLSLShader());
+    mBackgroundShader->InitVertexShaderFromString(defines + cBackgroundVert);
+    mBackgroundShader->InitFragmentShaderFromString(defines + cBackgroundFrag);
+    mBackgroundShader->Link();
+
+    mShaderDirty = false;
+  }
+
+  // draw background
   if ((mBackgroundTexture1 && mBackgroundColor1[3] != 0.f) ||
       (mBackgroundTexture2 && mBackgroundColor2[3] != 0.f)) {
     mBackgroundVAO->Bind();
@@ -288,25 +294,37 @@ bool Stars::Do() {
     mBackgroundVAO->Release();
   }
 
-  // draw stars --------------------------------------------------------------
+  // draw stars
   mStarVAO->Bind();
   mStarShader->Bind();
 
-  mStarTexture->Bind(GL_TEXTURE0);
-  mStarShader->SetUniform(mStarShader->GetUniformLocation("iStarTexture"), 0);
+  if (mDrawMode == DrawMode::ePoint || mDrawMode == DrawMode::eSmoothPoint) {
+    glPointSize(0.5f);
+  }
+
+  if (mDrawMode == DrawMode::eSmoothPoint) {
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_POINT_SMOOTH);
+    glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
+  } else {
+    glDisable(GL_POINT_SMOOTH);
+  }
+
+  int viewport[4];
+  glGetIntegerv(GL_VIEWPORT, viewport);
+
+  mStarShader->SetUniform(mStarShader->GetUniformLocation("uResolution"), viewport[2], viewport[3]);
+
+  // mStarTexture->Bind(GL_TEXTURE0);
+  // mStarShader->SetUniform(mStarShader->GetUniformLocation("uStarTexture"), 0);
+  mStarShader->SetUniform(mStarShader->GetUniformLocation("uMinMagnitude"), mMinMagnitude);
+  mStarShader->SetUniform(mStarShader->GetUniformLocation("uMaxMagnitude"), mMaxMagnitude);
+  mStarShader->SetUniform(mStarShader->GetUniformLocation("uSolidAngle"), mSolidAngle);
   mStarShader->SetUniform(
-      mStarShader->GetUniformLocation("fLoadedMinMagnitude"), mLoadedMinMagnitude);
-  mStarShader->SetUniform(
-      mStarShader->GetUniformLocation("fLoadedMaxMagnitude"), mLoadedMaxMagnitude);
-  mStarShader->SetUniform(mStarShader->GetUniformLocation("fMinMagnitude"), mMinMagnitude);
-  mStarShader->SetUniform(mStarShader->GetUniformLocation("fMaxMagnitude"), mMaxMagnitude);
-  mStarShader->SetUniform(mStarShader->GetUniformLocation("fMinOpacity"), mMinOpacity);
-  mStarShader->SetUniform(mStarShader->GetUniformLocation("fMaxOpacity"), mMaxOpacity);
-  mStarShader->SetUniform(mStarShader->GetUniformLocation("fMinSize"), mMinSize);
-  mStarShader->SetUniform(mStarShader->GetUniformLocation("fMaxSize"), mMaxSize);
-  mStarShader->SetUniform(mStarShader->GetUniformLocation("fScalingExponent"), mScalingExponent);
+      mStarShader->GetUniformLocation("uLuminanceMultiplicator"), mLuminanceMultiplicator);
 
   VistaTransformMatrix matInverseMV(matModelView.GetInverted());
+  VistaTransformMatrix matInverseP(matProjection.GetInverted());
 
   GLint loc = mStarShader->GetUniformLocation("uMatMV");
   glUniformMatrix4fv(loc, 1, GL_FALSE, matModelView.GetData());
@@ -317,9 +335,12 @@ bool Stars::Do() {
   loc = mStarShader->GetUniformLocation("uInvMV");
   glUniformMatrix4fv(loc, 1, GL_FALSE, matInverseMV.GetData());
 
+  loc = mStarShader->GetUniformLocation("uInvP");
+  glUniformMatrix4fv(loc, 1, GL_FALSE, matInverseP.GetData());
+
   glDrawArrays(GL_POINTS, 0, (GLsizei)mStars.size());
 
-  mStarTexture->Unbind(GL_TEXTURE0);
+  // mStarTexture->Unbind(GL_TEXTURE0);
 
   mStarShader->Release();
   mStarVAO->Release();
@@ -400,63 +421,41 @@ void Stars::init(const std::string& sStarTextureFile, const std::string& sCacheF
   if (!readStarCache(sCacheFile)) {
     std::map<CatalogType, std::string>::const_iterator it;
 
-    it = mCatalogs.find(CatalogType::eGaia);
-    if (it != mCatalogs.end()) {
+    it = mCatalogs.find(CatalogType::eHipparcos);
+    if (it != mCatalogs.end())
       readStarsFromCatalog(it->first, it->second);
 
-      if (mCatalogs.size() > 1) {
-        std::cout << "[Stars] Failed to load star catalogs: "
-                  << "Gaia cannot be combined with other catalogues!" << std::endl;
-      }
-    } else {
-      it = mCatalogs.find(CatalogType::eHipparcos);
-      if (it != mCatalogs.end())
-        readStarsFromCatalog(it->first, it->second);
+    it = mCatalogs.find(CatalogType::eTycho);
+    if (it != mCatalogs.end())
+      readStarsFromCatalog(it->first, it->second);
 
-      it = mCatalogs.find(CatalogType::eTycho);
-      if (it != mCatalogs.end())
+    it = mCatalogs.find(CatalogType::eTycho2);
+    if (it != mCatalogs.end()) {
+      // do not load tycho and tycho 2
+      if (mCatalogs.find(CatalogType::eTycho) == mCatalogs.end()) {
         readStarsFromCatalog(it->first, it->second);
-
-      it = mCatalogs.find(CatalogType::eTycho2);
-      if (it != mCatalogs.end()) {
-        // do not load tycho and tycho 2
-        if (mCatalogs.find(CatalogType::eTycho) == mCatalogs.end()) {
-          readStarsFromCatalog(it->first, it->second);
-        } else {
-          std::cout << "[Stars] Failed to load Tycho2 catalog: "
-                    << "Tycho already loaded!" << std::endl;
-        }
+      } else {
+        std::cout << "Failed to load Tycho2 catalog: "
+                  << "Tycho already loaded!" << std::endl;
       }
     }
 
     if (!mStars.empty()) {
       writeStarCache(sCacheFile);
     } else {
-      std::cerr << "[Stars] Loaded no stars. Stars will not work properly." << std::endl;
+      std::cerr << "Loaded no stars. Stars will not work properly." << std::endl;
     }
   }
 
   // create texture ----------------------------------------------------------
   mStarTexture = cs::graphics::TextureLoader::loadFromFile(sStarTextureFile);
 
-  // create shaders ----------------------------------------------------------
-  mStarShader = new VistaGLSLShader();
-  mStarShader->InitVertexShaderFromString(cStarsVert);
-  mStarShader->InitFragmentShaderFromString(cStarsFrag);
-  mStarShader->InitGeometryShaderFromString(cStarsGeom);
-  mStarShader->Link();
-
-  mBackgroundShader = new VistaGLSLShader();
-  mBackgroundShader->InitVertexShaderFromString(cBackgroundVert);
-  mBackgroundShader->InitFragmentShaderFromString(cBackgroundFrag);
-  mBackgroundShader->Link();
-
   // create buffers ----------------------------------------------------------
-  mStarVBO = new VistaBufferObject();
-  mStarVAO = new VistaVertexArrayObject();
+  mStarVBO.reset(new VistaBufferObject());
+  mStarVAO.reset(new VistaVertexArrayObject());
 
-  mBackgroundVBO = new VistaBufferObject();
-  mBackgroundVAO = new VistaVertexArrayObject();
+  mBackgroundVBO.reset(new VistaBufferObject());
+  mBackgroundVAO.reset(new VistaVertexArrayObject());
 
   buildStarVAO();
   buildBackgroundVAO();
@@ -464,17 +463,16 @@ void Stars::init(const std::string& sStarTextureFile, const std::string& sCacheF
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool Stars::readStarsFromCatalog(CatalogType eType, const std::string& sFilename) {
+bool Stars::readStarsFromCatalog(CatalogType eType, const std::string& filename) {
   bool success = false;
-  std::cout << "[Stars] Reading " << sFilename << " ..." << std::endl;
+  std::cout << "Reading " << filename << " ..." << std::endl;
 
   std::ifstream file;
 
   try {
-    file.open(sFilename.c_str(), std::ifstream::in);
+    file.open(filename.c_str(), std::ifstream::in);
   } catch (std::exception& e) {
-    std::cerr << "[Stars]  Cannot open catalog file " << sFilename << " (" << e.what() << ") !"
-              << std::endl;
+    std::cerr << " Cannot open catalog file " << filename << " (" << e.what() << ") !" << std::endl;
   }
 
   if (file.is_open()) {
@@ -494,9 +492,8 @@ bool Stars::readStarsFromCatalog(CatalogType eType, const std::string& sFilename
       std::stringstream        stream(line);
       std::string              item;
       std::vector<std::string> items;
-      char                     delim = (eType == CatalogType::eGaia) ? ',' : '|';
 
-      while (getline(stream, item, delim)) {
+      while (getline(stream, item, '|')) {
         items.emplace_back(item);
       }
 
@@ -506,7 +503,7 @@ bool Stars::readStarsFromCatalog(CatalogType eType, const std::string& sFilename
         // skip if part of hipparcos catalogue
         int tmp;
         if (eType != CatalogType::eHipparcos && loadHipparcos &&
-            FromString<int>(items[cColumnMapping[cs::utils::enumCast(eType)]
+            fromString<int>(items[cColumnMapping[cs::utils::enumCast(eType)]
                                                 [cs::utils::enumCast(CatalogColumn::eHipp)]],
                 tmp)) {
           continue;
@@ -517,25 +514,25 @@ bool Stars::readStarsFromCatalog(CatalogType eType, const std::string& sFilename
 
         Star star;
         successStoreData &=
-            FromString<float>(items[cColumnMapping[cs::utils::enumCast(eType)]
+            fromString<float>(items[cColumnMapping[cs::utils::enumCast(eType)]
                                                   [cs::utils::enumCast(CatalogColumn::eVmag)]],
                 star.mVMagnitude);
         successStoreData &=
-            FromString<float>(items[cColumnMapping[cs::utils::enumCast(eType)]
+            fromString<float>(items[cColumnMapping[cs::utils::enumCast(eType)]
                                                   [cs::utils::enumCast(CatalogColumn::eBmag)]],
                 star.mBMagnitude);
         successStoreData &=
-            FromString<float>(items[cColumnMapping[cs::utils::enumCast(eType)]
+            fromString<float>(items[cColumnMapping[cs::utils::enumCast(eType)]
                                                   [cs::utils::enumCast(CatalogColumn::eRect)]],
                 star.mAscension);
         successStoreData &=
-            FromString<float>(items[cColumnMapping[cs::utils::enumCast(eType)]
+            fromString<float>(items[cColumnMapping[cs::utils::enumCast(eType)]
                                                   [cs::utils::enumCast(CatalogColumn::eDecl)]],
                 star.mDeclination);
 
         if (cColumnMapping[cs::utils::enumCast(eType)][cs::utils::enumCast(CatalogColumn::ePara)] >
             0) {
-          if (!FromString<float>(items[cColumnMapping[cs::utils::enumCast(eType)]
+          if (!fromString<float>(items[cColumnMapping[cs::utils::enumCast(eType)]
                                                      [cs::utils::enumCast(CatalogColumn::ePara)]],
                   star.mParallax)) {
             star.mParallax = 0;
@@ -554,16 +551,16 @@ bool Stars::readStarsFromCatalog(CatalogType eType, const std::string& sFilename
 
       // print progress status
       if (mStars.size() % 10000 == 0) {
-        std::cout << "[Stars] (Read " << mStars.size() << " stars so far)" << std::endl;
+        std::cout << "(Read " << mStars.size() << " stars so far)" << std::endl;
       }
     }
     file.close();
     success = true;
 
-    std::cout << "[Stars] Read total of "
+    std::cout << "Read total of "
               << " (" << mStars.size() << ")stars." << std::endl;
   } else {
-    std::cerr << "[Stars] Could not open catalog file " << sFilename << "!" << std::endl;
+    std::cerr << "Could not open catalog file " << filename << "!" << std::endl;
   }
 
   return success;
@@ -598,12 +595,12 @@ void Stars::writeStarCache(const std::string& sCacheFile) const {
   file.open(sCacheFile.c_str(), std::ios::out | std::ios::binary);
   if (file.is_open()) {
     // write serialized star data
-    std::cout << "[Stars] Writing " << mStars.size() << " stars(" << serializer.GetBufferSize()
+    std::cout << "Writing " << mStars.size() << " stars(" << serializer.GetBufferSize()
               << " bytes) into " << sCacheFile << std::endl;
     file.write((const char*)serializer.GetBuffer(), serializer.GetBufferSize());
     file.close();
   } else {
-    std::cerr << "[Stars] Could not open file " << sCacheFile << " for writing binary star data!"
+    std::cerr << "Could not open file " << sCacheFile << " for writing binary star data!"
               << std::endl;
   }
 }
@@ -662,13 +659,13 @@ bool Stars::readStarCache(const std::string& sCacheFile) {
 
       // print progress status
       if (mStars.size() % 100000 == 0) {
-        std::cout << "[Stars] (Read " << mStars.size() << " stars so far)" << std::endl;
+        std::cout << "(Read " << mStars.size() << " stars so far)" << std::endl;
       }
     }
 
     success = true;
 
-    std::cout << "[Stars] Read total of " << mStars.size() << " stars" << std::endl;
+    std::cout << "Read total of " << mStars.size() << " stars" << std::endl;
   }
 
   return success;
@@ -698,16 +695,18 @@ void Stars::buildStarVAO() {
       fDist = 1000.f / it->mParallax;
     }
 
+    // TODO: why is the native saturation only barely visible?
+    float fakeSaturation = 0.4;
+    color.SetHSVSaturation(
+        color.GetHSVSaturation() + fakeSaturation * (1 - color.GetHSVSaturation()));
+
     data[c]     = it->mDeclination;
     data[c + 1] = it->mAscension;
     data[c + 2] = fDist;
     data[c + 3] = color.GetRed();
     data[c + 4] = color.GetGreen();
     data[c + 5] = color.GetBlue();
-    data[c + 6] = it->mVMagnitude;
-
-    mLoadedMinMagnitude = std::min(mLoadedMinMagnitude, it->mVMagnitude);
-    mLoadedMaxMagnitude = std::max(mLoadedMaxMagnitude, it->mVMagnitude);
+    data[c + 6] = it->mVMagnitude - 5.f * std::log10(fDist / 10.f);
   }
 
   mStarVBO->Bind(GL_ARRAY_BUFFER);
@@ -717,22 +716,22 @@ void Stars::buildStarVAO() {
   // star positions
   mStarVAO->EnableAttributeArray(0);
   mStarVAO->SpecifyAttributeArrayFloat(
-      0, 2, GL_FLOAT, GL_FALSE, iElementCount * sizeof(float), 0, mStarVBO);
+      0, 2, GL_FLOAT, GL_FALSE, iElementCount * sizeof(float), 0, mStarVBO.get());
 
   // star distances
   mStarVAO->EnableAttributeArray(1);
   mStarVAO->SpecifyAttributeArrayFloat(
-      1, 1, GL_FLOAT, GL_FALSE, iElementCount * sizeof(float), 2 * sizeof(float), mStarVBO);
+      1, 1, GL_FLOAT, GL_FALSE, iElementCount * sizeof(float), 2 * sizeof(float), mStarVBO.get());
 
   // color
   mStarVAO->EnableAttributeArray(2);
   mStarVAO->SpecifyAttributeArrayFloat(
-      2, 3, GL_FLOAT, GL_FALSE, iElementCount * sizeof(float), 3 * sizeof(float), mStarVBO);
+      2, 3, GL_FLOAT, GL_FALSE, iElementCount * sizeof(float), 3 * sizeof(float), mStarVBO.get());
 
   // magnitude
   mStarVAO->EnableAttributeArray(3);
   mStarVAO->SpecifyAttributeArrayFloat(
-      3, 1, GL_FLOAT, GL_FALSE, iElementCount * sizeof(float), 6 * sizeof(float), mStarVBO);
+      3, 1, GL_FLOAT, GL_FALSE, iElementCount * sizeof(float), 6 * sizeof(float), mStarVBO.get());
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -755,7 +754,7 @@ void Stars::buildBackgroundVAO() {
   // positions
   mBackgroundVAO->EnableAttributeArray(0);
   mBackgroundVAO->SpecifyAttributeArrayFloat(
-      0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0, mBackgroundVBO);
+      0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0, mBackgroundVBO.get());
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

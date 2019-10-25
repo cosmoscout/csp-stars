@@ -21,19 +21,13 @@ namespace csp::stars {
 class Plugin : public cs::core::PluginBase {
  public:
   struct Properties {
-    cs::utils::Property<bool> mEnabled             = true;
-    cs::utils::Property<bool> mEnableCelestialGrid = false;
-    cs::utils::Property<bool> mEnableStarFigures   = false;
+    cs::utils::Property<bool>   mEnabled                = true;
+    cs::utils::Property<bool>   mEnableCelestialGrid    = false;
+    cs::utils::Property<bool>   mEnableStarFigures      = false;
+    cs::utils::Property<double> mLuminanceMultiplicator = 1.f;
   };
 
   struct Settings {
-    double                     mMinMagnitude;
-    double                     mMaxMagnitude;
-    double                     mMinSize;
-    double                     mMaxSize;
-    double                     mMinOpacity;
-    double                     mMaxOpacity;
-    double                     mScalingExponent;
     std::string                mBackgroundTexture1;
     std::string                mBackgroundTexture2;
     glm::vec4                  mBackgroundColor1;
@@ -41,7 +35,6 @@ class Plugin : public cs::core::PluginBase {
     std::string                mStarTexture;
     std::optional<std::string> mCacheFile;
     std::optional<std::string> mHipparcosCatalog;
-    std::optional<std::string> mGaiaCatalog;
     std::optional<std::string> mTychoCatalog;
     std::optional<std::string> mTycho2Catalog;
   };
