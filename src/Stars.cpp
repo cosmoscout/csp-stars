@@ -257,6 +257,12 @@ bool Stars::Do() {
     mBackgroundShader->Bind();
     mBackgroundShader->SetUniform(mBackgroundShader->GetUniformLocation("iTexture"), 0);
 
+    float backgroundIntensity = mLuminanceMultiplicator;
+
+    if (mEnableHDR) {
+      backgroundIntensity *= 0.001;
+    }
+
     VistaTransformMatrix matMVNoTranslation = matModelView;
 
     // reduce jitter
@@ -276,7 +282,8 @@ bool Stars::Do() {
 
     if (mBackgroundTexture1 && mBackgroundColor1[3] != 0.f) {
       mBackgroundShader->SetUniform(mBackgroundShader->GetUniformLocation("cColor"),
-          mBackgroundColor1[0], mBackgroundColor1[1], mBackgroundColor1[2], mBackgroundColor1[3]);
+          mBackgroundColor1[0], mBackgroundColor1[1], mBackgroundColor1[2],
+          mBackgroundColor1[3] * backgroundIntensity);
       mBackgroundTexture1->Bind(GL_TEXTURE0);
       glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
       mBackgroundTexture1->Unbind(GL_TEXTURE0);
@@ -284,7 +291,8 @@ bool Stars::Do() {
 
     if (mBackgroundTexture2 && mBackgroundColor2[3] != 0.f) {
       mBackgroundShader->SetUniform(mBackgroundShader->GetUniformLocation("cColor"),
-          mBackgroundColor2[0], mBackgroundColor2[1], mBackgroundColor2[2], mBackgroundColor2[3]);
+          mBackgroundColor2[0], mBackgroundColor2[1], mBackgroundColor2[2],
+          mBackgroundColor2[3] * backgroundIntensity);
       mBackgroundTexture2->Bind(GL_TEXTURE0);
       glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
       mBackgroundTexture2->Unbind(GL_TEXTURE0);
@@ -448,7 +456,7 @@ void Stars::init(const std::string& sStarTextureFile, const std::string& sCacheF
   }
 
   // create texture ----------------------------------------------------------
-  mStarTexture = cs::graphics::TextureLoader::loadFromFile(sStarTextureFile);
+  setStarTexture(sStarTextureFile);
 
   // create buffers ----------------------------------------------------------
   mStarVBO.reset(new VistaBufferObject());
@@ -694,11 +702,6 @@ void Stars::buildStarVAO() {
     if (it->mParallax > 0.f) {
       fDist = 1000.f / it->mParallax;
     }
-
-    // TODO: why is the native saturation only barely visible?
-    float fakeSaturation = 0.4;
-    color.SetHSVSaturation(
-        color.GetHSVSaturation() + fakeSaturation * (1 - color.GetHSVSaturation()));
 
     data[c]     = it->mDeclination;
     data[c + 1] = it->mAscension;

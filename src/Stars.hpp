@@ -155,11 +155,11 @@ class Stars : public IVistaOpenGLDraw {
   std::vector<VistaColor>            mSpectralColors;
   std::map<CatalogType, std::string> mCatalogs;
 
-  DrawMode mDrawMode = DrawMode::eSmoothPoint;
+  DrawMode mDrawMode = DrawMode::eSmoothDisc;
 
   bool  mShaderDirty            = true;
   bool  mEnableHDR              = true;
-  float mSolidAngle             = 0.00001f;
+  float mSolidAngle             = 0.000005f;
   float mMinMagnitude           = -5.f;
   float mMaxMagnitude           = 15.f;
   float mLuminanceMultiplicator = 1.f;

@@ -129,8 +129,8 @@ void Plugin::init() {
   mGuiManager->getSideBar()->registerCallback<bool>("set_enable_stars_figures",
       ([this](bool value) { mProperties->mEnableStarFigures = value; }));
 
-  mGuiManager->getSideBar()->registerCallback<double>("set_star_luminance_multiplicator",
-      ([this](double value) { mProperties->mLuminanceMultiplicator = value; }));
+  mGuiManager->getSideBar()->registerCallback<double>("set_star_luminance_boost",
+      ([this](double value) { mProperties->mLuminanceMultiplicator = std::exp(value); }));
 
   mGuiManager->getSideBar()->registerCallback<double>(
       "set_star_size", ([this](double value) { mStars->setSolidAngle(value * 0.0001); }));

@@ -25,6 +25,11 @@ float magnitudeToLuminance(float apparentMagnitude, float solidAngle) {
     float surfaceBrightness = apparentMagnitude + 2.5 * log10(solidAngle * steradiansToSquareArcSecs);
     return 10.8e4 * pow(10, -0.4 * surfaceBrightness);
 }
+
+vec3 SRGBtoLINEAR(vec3 srgbIn) {
+  vec3 bLess = step(vec3(0.04045),srgbIn);
+  return mix( srgbIn/vec3(12.92), pow((srgbIn+vec3(0.055))/vec3(1.055),vec3(2.4)), bLess );
+}
 )";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -44,8 +49,7 @@ uniform mat4 uInvMV;
 out vec3  vColor;
 out float vMagnitude;
 
-void main()
-{
+void main() {
     vec3 starPos = vec3(
         cos(inDir.x) * cos(inDir.y) * inDist,
         sin(inDir.x) * inDist,
@@ -83,13 +87,16 @@ out vec3  iColor;
 out float iMagnitude;
 out vec2  iTexcoords;
 
-void main()
-{
-    iColor = vColor[0];
+void main() {
+    #ifdef ENABLE_HDR
+        iColor = SRGBtoLINEAR(vColor[0]);
+    #else
+        iColor = vColor[0];
+    #endif
+
     iMagnitude = vMagnitude[0];
 
-    if (iMagnitude > uMaxMagnitude || iMagnitude < uMinMagnitude)
-    {
+    if (iMagnitude > uMaxMagnitude || iMagnitude < uMinMagnitude) {
         return;
     }
 
@@ -102,20 +109,20 @@ void main()
     const float yo[2] = float[2](0.5, -0.5);
     const float xo[2] = float[2](0.5, -0.5);
 
-    for(int j=0; j!=2; ++j)
-    {
-        for(int i=0; i!=2; ++i)
-        {
-            iTexcoords = vec2(xo[i], yo[j])*2;
-            
-            const float PI = 3.14159265359;
-            float diameter = 2 * sqrt(1 - pow(1-uSolidAngle/(2*PI), 2.0));
-            float scale = dist * diameter;
+    const float PI = 3.14159265359;
+    float diameter = 2 * sqrt(1 - pow(1-uSolidAngle/(2*PI), 2.0));
+    float scale = dist * diameter;
 
-            #ifdef DRAWMODE_SPRITE
-                float luminance = magnitudeToLuminance(iMagnitude, uSolidAngle);
-                scale *= sqrt(luminance)*100;
-            #endif
+    #ifdef DRAWMODE_SPRITE
+        float referenceLuminance = magnitudeToLuminance(10, uSolidAngle);
+        float luminance = magnitudeToLuminance(iMagnitude, uSolidAngle);
+        float scaleFac = pow(luminance / referenceLuminance, 1.0 / 3.0);
+        scale *= scaleFac;
+    #endif
+
+    for(int j=0; j!=2; ++j) {
+        for(int i=0; i!=2; ++i) {
+            iTexcoords = vec2(xo[i], yo[j])*2;
 
             vec3 pos = gl_in[0].gl_Position.xyz + (xo[i] * x + yo[j] * y) * scale;
 
@@ -151,8 +158,7 @@ uniform float uLuminanceMultiplicator;
 // outputs
 out vec4 oLuminance;
 
-void main()
-{
+void main() {
     float dist = min(1, length(iTexcoords));
     float luminance = magnitudeToLuminance(iMagnitude, uSolidAngle);
 
@@ -166,12 +172,22 @@ void main()
         float fac = luminance * clamp(1-dist, 0, 1) * 3;
     #endif
     
-    #ifdef DRAWMODE_SPRITE  
-        float fac = texture(iTexture, iTexcoords * 0.5 + 0.5).r;
+    #ifdef DRAWMODE_SPRITE
+        float referenceLuminance = magnitudeToLuminance(10, uSolidAngle);
+        float scaleFac = pow(luminance / referenceLuminance, 1.0 / 3.0);
+        // TODO: Some magic numbers here. 001744984 is the average brightness of the currently used
+        // star texture, 4.5e-12 has been retrieved by trial and error when trying to adjust the
+        // total scene brightness to the other implemented methods
+        float fac = texture(iTexture, iTexcoords * 0.5 + 0.5).r * 4.5e-12 / 0.001744984 * scaleFac / uSolidAngle;
     #endif
 
     vec3 vColor = iColor * fac * uLuminanceMultiplicator;
+
     oLuminance  = vec4(vColor, 1.0);
+
+    #ifndef ENABLE_HDR
+        oLuminance.rgb *= uSolidAngle * 5e7;
+    #endif
 }
 
 )";
@@ -196,8 +212,7 @@ out vec3  vColor;
 out vec4  vScreenSpacePos;
 out float vMagnitude;
 
-void main()
-{
+void main() {
     vec3 starPos = vec3(
         cos(inDir.x) * cos(inDir.y) * inDist,
         sin(inDir.x) * inDist,
@@ -207,7 +222,12 @@ void main()
     vec3 observerPos = (uInvMV * vec4(0, 0, 0, 1) / parsecToMeter).xyz;
 
     vMagnitude = getApparentMagnitude(inAbsMagnitude, length(starPos-observerPos));
-    vColor = inColor;
+    
+    #ifdef ENABLE_HDR
+        vColor = SRGBtoLINEAR(inColor);
+    #else
+        vColor = inColor;
+    #endif
 
     vScreenSpacePos = uMatP * uMatMV * vec4(starPos*parsecToMeter, 1);
     
@@ -263,10 +283,8 @@ float getSolidAngleOfPixel(vec4 screenSpacePosition, vec2 resolution, mat4 invPr
          + getSolidAngle(pixelCorners[0].xyz, pixelCorners[2].xyz, pixelCorners[3].xyz);
 }
 
-void main()
-{
-    if (vMagnitude > uMaxMagnitude || vMagnitude < uMinMagnitude)
-    {
+void main() {
+    if (vMagnitude > uMaxMagnitude || vMagnitude < uMinMagnitude) {
         discard;
     }
 
@@ -274,6 +292,10 @@ void main()
     float luminance = magnitudeToLuminance(vMagnitude, solidAngle);
 
     oLuminance = vec4(vColor * luminance * uLuminanceMultiplicator, 1.0);
+
+    #ifndef ENABLE_HDR
+        oLuminance.rgb *= solidAngle * 5e7;
+    #endif
 }
 )";
 
@@ -290,12 +312,11 @@ uniform mat4 uInvMV;
 // outputs
 out vec3 vView;
 
-void main()
-{
+void main() {
     vec3 vRayOrigin = (uInvMV * vec4(0, 0, 0, 1)).xyz;
     vec4 vRayEnd    = uInvMVP * vec4(vPosition, 0, 1);
-    vView  = vRayEnd.xyz / vRayEnd.w - vRayOrigin;
-    gl_Position = vec4(vPosition, 1, 1);
+    vView           = vRayEnd.xyz / vRayEnd.w - vRayOrigin;
+    gl_Position     = vec4(vPosition, 1, 1);
 }
 )";
 
@@ -316,13 +337,11 @@ float my_atan2(float a, float b) {
     return 2.0 * atan(a/(sqrt(b*b + a*a) + b));
 }
 
-void main()
-{
+void main() {
     const float PI = 3.14159265359;
     vec3 view = normalize(vView);
-    vec2 texcoord = vec2(0.5*my_atan2(view.x, -view.z)/PI,
-                         acos(view.y)/PI);
-    vOutColor  = texture(iTexture, texcoord).rgb * cColor.rgb * cColor.a;
+    vec2 texcoord = vec2(0.5*my_atan2(view.x, -view.z)/PI, acos(view.y)/PI);
+    vOutColor = texture(iTexture, texcoord).rgb * cColor.rgb * cColor.a;
 }
 )";
 
