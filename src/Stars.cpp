@@ -315,8 +315,8 @@ bool Stars::Do() {
 
   mStarShader->SetUniform(mStarShader->GetUniformLocation("uResolution"), viewport[2], viewport[3]);
 
-  // mStarTexture->Bind(GL_TEXTURE0);
-  // mStarShader->SetUniform(mStarShader->GetUniformLocation("uStarTexture"), 0);
+  mStarTexture->Bind(GL_TEXTURE0);
+  mStarShader->SetUniform(mStarShader->GetUniformLocation("uStarTexture"), 0);
   mStarShader->SetUniform(mStarShader->GetUniformLocation("uMinMagnitude"), mMinMagnitude);
   mStarShader->SetUniform(mStarShader->GetUniformLocation("uMaxMagnitude"), mMaxMagnitude);
   mStarShader->SetUniform(mStarShader->GetUniformLocation("uSolidAngle"), mSolidAngle);
@@ -340,7 +340,7 @@ bool Stars::Do() {
 
   glDrawArrays(GL_POINTS, 0, (GLsizei)mStars.size());
 
-  // mStarTexture->Unbind(GL_TEXTURE0);
+  mStarTexture->Unbind(GL_TEXTURE0);
 
   mStarShader->Release();
   mStarVAO->Release();

@@ -8,6 +8,8 @@
 
 namespace csp::stars {
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 const std::string Stars::cStarsSnippets = R"(
 float log10(float x) {
     return log(x) / log(10.0);
@@ -112,7 +114,7 @@ void main()
 
             #ifdef DRAWMODE_SPRITE
                 float luminance = magnitudeToLuminance(iMagnitude, uSolidAngle);
-                scale *= (1 + luminance * 100);
+                scale *= sqrt(luminance)*100;
             #endif
 
             vec3 pos = gl_in[0].gl_Position.xyz + (xo[i] * x + yo[j] * y) * scale;
@@ -142,27 +144,33 @@ in float iMagnitude;
 in vec2  iTexcoords;
 
 // uniforms
+uniform sampler2D iTexture;
 uniform float uSolidAngle;
 uniform float uLuminanceMultiplicator;
 
 // outputs
-vec4 oLuminance;
+out vec4 oLuminance;
 
 void main()
 {
     float dist = min(1, length(iTexcoords));
-
-    #ifdef DRAWMODE_DISC
-        float disc = dist < 1 ? 1 : 0;
-    #else // DRAWMODE_SMOOTH_DISC
-        // the brightness is basically a cone from above - to achieve the
-        // same total brightness, we have to multiply it with three
-        float disc = clamp(1-dist, 0, 1) * 3;
-    #endif
-
     float luminance = magnitudeToLuminance(iMagnitude, uSolidAngle);
 
-    vec3 vColor = iColor * luminance * disc * uLuminanceMultiplicator;
+    #ifdef DRAWMODE_DISC
+        float fac = dist < 1 ? luminance : 0;
+    #endif
+
+    #ifdef DRAWMODE_SMOOTH_DISC
+        // the brightness is basically a cone from above - to achieve the
+        // same total brightness, we have to multiply it with three
+        float fac = luminance * clamp(1-dist, 0, 1) * 3;
+    #endif
+    
+    #ifdef DRAWMODE_SPRITE  
+        float fac = texture(iTexture, iTexcoords * 0.5 + 0.5).r;
+    #endif
+
+    vec3 vColor = iColor * fac * uLuminanceMultiplicator;
     oLuminance  = vec4(vColor, 1.0);
 }
 

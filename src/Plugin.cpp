@@ -133,7 +133,7 @@ void Plugin::init() {
       ([this](double value) { mProperties->mLuminanceMultiplicator = value; }));
 
   mGuiManager->getSideBar()->registerCallback<double>(
-      "set_star_size", ([this](double value) { mStars->setSolidAngle(value); }));
+      "set_star_size", ([this](double value) { mStars->setSolidAngle(value * 0.0001); }));
 
   mGuiManager->getSideBar()->registerCallback<double, double>(
       "set_star_magnitude", ([this](double val, double handle) {
