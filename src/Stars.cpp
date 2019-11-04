@@ -257,10 +257,10 @@ bool Stars::Do() {
     mBackgroundShader->Bind();
     mBackgroundShader->SetUniform(mBackgroundShader->GetUniformLocation("iTexture"), 0);
 
-    float backgroundIntensity = mLuminanceMultiplicator;
+    float backgroundIntensity = 1.0;
 
     if (mEnableHDR) {
-      backgroundIntensity *= 0.001;
+      backgroundIntensity = 0.001 * mLuminanceMultiplicator;
     }
 
     VistaTransformMatrix matMVNoTranslation = matModelView;

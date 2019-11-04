@@ -30,6 +30,19 @@ vec3 SRGBtoLINEAR(vec3 srgbIn) {
   vec3 bLess = step(vec3(0.04045),srgbIn);
   return mix( srgbIn/vec3(12.92), pow((srgbIn+vec3(0.055))/vec3(1.055),vec3(2.4)), bLess );
 }
+
+// http://filmicworlds.com/blog/filmic-tonemapping-operators/
+float A = 0.15;
+float B = 0.50;
+float C = 0.10;
+float D = 0.20;
+float E = 0.02;
+float F = 0.30;
+float W = 11.2;
+
+vec3 Uncharted2Tonemap(vec3 x) {
+  return ((x*(A*x+C*B)+D*E)/(x*(A*x+B)+D*F))-E/F;
+}
 )";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -88,11 +101,7 @@ out float iMagnitude;
 out vec2  iTexcoords;
 
 void main() {
-    #ifdef ENABLE_HDR
-        iColor = SRGBtoLINEAR(vColor[0]);
-    #else
-        iColor = vColor[0];
-    #endif
+    iColor = SRGBtoLINEAR(vColor[0]);
 
     iMagnitude = vMagnitude[0];
 
@@ -186,7 +195,7 @@ void main() {
     oLuminance  = vec4(vColor, 1.0);
 
     #ifndef ENABLE_HDR
-        oLuminance.rgb *= uSolidAngle * 5e7;
+        oLuminance.rgb = Uncharted2Tonemap(oLuminance.rgb * uSolidAngle * 5e8);
     #endif
 }
 
@@ -223,11 +232,7 @@ void main() {
 
     vMagnitude = getApparentMagnitude(inAbsMagnitude, length(starPos-observerPos));
     
-    #ifdef ENABLE_HDR
-        vColor = SRGBtoLINEAR(inColor);
-    #else
-        vColor = inColor;
-    #endif
+    vColor = SRGBtoLINEAR(inColor);
 
     vScreenSpacePos = uMatP * uMatMV * vec4(starPos*parsecToMeter, 1);
     
@@ -294,7 +299,7 @@ void main() {
     oLuminance = vec4(vColor * luminance * uLuminanceMultiplicator, 1.0);
 
     #ifndef ENABLE_HDR
-        oLuminance.rgb *= solidAngle * 5e7;
+        oLuminance.rgb = Uncharted2Tonemap(oLuminance.rgb * uSolidAngle * 5e8);
     #endif
 }
 )";
