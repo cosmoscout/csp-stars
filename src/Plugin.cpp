@@ -171,6 +171,14 @@ void Plugin::deInit() {
   mGuiManager->getSideBar()->unregisterCallback("set_enable_stars");
   mGuiManager->getSideBar()->unregisterCallback("set_enable_stars_grid");
   mGuiManager->getSideBar()->unregisterCallback("set_enable_stars_figures");
+  mGuiManager->getSideBar()->unregisterCallback("set_star_luminance_boost");
+  mGuiManager->getSideBar()->unregisterCallback("set_star_size");
+  mGuiManager->getSideBar()->unregisterCallback("set_star_magnitude");
+  mGuiManager->getSideBar()->unregisterCallback("set_star_draw_mode_0");
+  mGuiManager->getSideBar()->unregisterCallback("set_star_draw_mode_1");
+  mGuiManager->getSideBar()->unregisterCallback("set_star_draw_mode_2");
+  mGuiManager->getSideBar()->unregisterCallback("set_star_draw_mode_3");
+  mGuiManager->getSideBar()->unregisterCallback("set_star_draw_mode_4");
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
