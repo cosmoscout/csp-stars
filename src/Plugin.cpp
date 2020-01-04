@@ -9,9 +9,12 @@
 #include "../../../src/cs-core/GraphicsEngine.hpp"
 #include "../../../src/cs-core/GuiManager.hpp"
 #include "../../../src/cs-core/SolarSystem.hpp"
+#include "../../../src/cs-utils/logger.hpp"
 
 #include <VistaKernel/GraphicsManager/VistaSceneGraph.h>
 #include <VistaKernelOpenSGExt/VistaOpenSGMaterialTools.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/spdlog.h>
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -67,12 +70,16 @@ void from_json(const nlohmann::json& j, Plugin::Settings& o) {
 
 Plugin::Plugin()
     : mProperties(std::make_shared<Properties>()) {
+
+  // Create default logger for this plugin.
+  cs::utils::logger::init("csp-stars");
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void Plugin::init() {
-  std::cout << "Loading: CosmoScout VR Plugin Stars" << std::endl;
+
+  spdlog::info("Loading plugin...");
 
   // init stars
   mPluginSettings = mAllSettings->mPlugins.at("csp-stars");
@@ -150,17 +157,23 @@ void Plugin::init() {
 
   mGuiManager->getSideBar()->registerCallback<bool>("set_enable_stars_figures",
       ([this](bool value) { mProperties->mEnableStarFigures = value; }));
+
+  spdlog::info("Loading done.");
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void Plugin::deInit() {
+  spdlog::info("Unloading plugin...");
+
   mSolarSystem->unregisterAnchor(mStarsTransform);
   mSceneGraph->GetRoot()->DisconnectChild(mStarsTransform.get());
 
   mGuiManager->getSideBar()->unregisterCallback("set_enable_stars");
   mGuiManager->getSideBar()->unregisterCallback("set_enable_stars_grid");
   mGuiManager->getSideBar()->unregisterCallback("set_enable_stars_figures");
+
+  spdlog::info("Unloading done.");
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -13,21 +13,18 @@
 
 #include "../../../src/cs-graphics/TextureLoader.hpp"
 
+#include <VistaInterProcComm/Connections/VistaByteBufferDeSerializer.h>
+#include <VistaInterProcComm/Connections/VistaByteBufferSerializer.h>
 #include <VistaKernel/GraphicsManager/VistaGeometryFactory.h>
 #include <VistaKernel/GraphicsManager/VistaOpenGLNode.h>
 #include <VistaKernel/GraphicsManager/VistaSceneGraph.h>
-
-#include <VistaOGLExt/VistaOGLUtils.h>
-#include <VistaOGLExt/VistaTexture.h>
-
 #include <VistaOGLExt/VistaBufferObject.h>
 #include <VistaOGLExt/VistaGLSLShader.h>
+#include <VistaOGLExt/VistaOGLUtils.h>
+#include <VistaOGLExt/VistaTexture.h>
 #include <VistaOGLExt/VistaVertexArrayObject.h>
-
 #include <VistaTools/tinyXML/tinyxml.h>
-
-#include <VistaInterProcComm/Connections/VistaByteBufferDeSerializer.h>
-#include <VistaInterProcComm/Connections/VistaByteBufferSerializer.h>
+#include <spdlog/spdlog.h>
 
 #include <fstream>
 
@@ -553,7 +550,7 @@ void Stars::init(const std::string& sStarTextureFile, const std::string& sCacheF
     if (!mStars.empty()) {
       writeStarCache(sCacheFile);
     } else {
-      std::cerr << "[Stars] Loaded no stars. Stars will not work properly." << std::endl;
+      spdlog::warn("Loaded no stars. Stars will not work properly.");
     }
   }
 
@@ -587,15 +584,14 @@ void Stars::init(const std::string& sStarTextureFile, const std::string& sCacheF
 
 bool Stars::readStarsFromCatalog(CatalogType eType, const std::string& sFilename) {
   bool success = false;
-  std::cout << "[Stars] Reading " << sFilename << " ..." << std::endl;
+  spdlog::info("Reading {}...", sFilename);
 
   std::ifstream file;
 
   try {
     file.open(sFilename.c_str(), std::ifstream::in);
   } catch (std::exception& e) {
-    std::cerr << "[Stars]  Cannot open catalog file " << sFilename << " (" << e.what() << ") !"
-              << std::endl;
+    spdlog::error("Failed to open catalog file {}: {}", sFilename, e.what());
   }
 
   if (file.is_open()) {
@@ -675,16 +671,15 @@ bool Stars::readStarsFromCatalog(CatalogType eType, const std::string& sFilename
 
       // print progress status
       if (mStars.size() % 10000 == 0) {
-        std::cout << "[Stars] (Read " << mStars.size() << " stars so far)" << std::endl;
+        spdlog::info("Read {} stars so far...", mStars.size());
       }
     }
     file.close();
     success = true;
 
-    std::cout << "[Stars] Read total of "
-              << " (" << mStars.size() << ")stars." << std::endl;
+    spdlog::info("Read a total of {} stars.", mStars.size());
   } else {
-    std::cerr << "[Stars] Could not open catalog file " << sFilename << "!" << std::endl;
+    spdlog::error("Failed to open catalog file {}!", sFilename);
   }
 
   return success;
@@ -724,8 +719,7 @@ void Stars::writeStarCache(const std::string& sCacheFile) const {
     file.write((const char*)serializer.GetBuffer(), serializer.GetBufferSize());
     file.close();
   } else {
-    std::cerr << "[Stars] Could not open file " << sCacheFile << " for writing binary star data!"
-              << std::endl;
+    spdlog::error("Failed to open file {} for writing binary star data!", sCacheFile);
   }
 }
 
@@ -783,13 +777,13 @@ bool Stars::readStarCache(const std::string& sCacheFile) {
 
       // print progress status
       if (mStars.size() % 100000 == 0) {
-        std::cout << "[Stars] (Read " << mStars.size() << " stars so far)" << std::endl;
+        spdlog::info("Read {} stars so far...", mStars.size());
       }
     }
 
     success = true;
 
-    std::cout << "[Stars] Read total of " << mStars.size() << " stars" << std::endl;
+    spdlog::info("Read a total of {} stars.", mStars.size());
   }
 
   return success;
