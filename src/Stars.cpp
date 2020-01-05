@@ -103,8 +103,7 @@ Stars::Stars(const std::string& sConfigFile)
   VistaXML::TiXmlDocument xDoc(sConfigFile);
 
   if (!xDoc.LoadFile()) {
-    std::cout << "Failed to load star config file " << sConfigFile << ": "
-              << "Cannont open file!" << std::endl;
+    spdlog::error("Failed to load star config file {}: Cannont open file!", sConfigFile);
     return;
   }
 
@@ -113,7 +112,7 @@ Stars::Stars(const std::string& sConfigFile)
 
   // Read Data
   if (std::string(pRoot->Value()) != "StarConfig") {
-    std::cout << "Failed to read star config file " << sConfigFile << "!" << std::endl;
+    spdlog::error("Failed to read star config file {}!", sConfigFile);
     return;
   }
 
@@ -161,12 +160,12 @@ Stars::Stars(const std::string& sConfigFile)
         ssValue >> mBackgroundColor2[0] >> mBackgroundColor2[1] >> mBackgroundColor2[2] >>
             mBackgroundColor2[3];
       } else {
-        std::cout << "Ignoring invalid entity " << sName << " while reading star config file "
-                  << sConfigFile << "!" << std::endl;
+        spdlog::warn(
+            "Ignoring invalid entity {} while reading star config file {}", sName, sConfigFile);
       }
     } else {
-      std::cout << "Ignoring invalid entity " << pProperty->Value()
-                << " while reading star config file " << sConfigFile << "!" << std::endl;
+      spdlog::warn("Ignoring invalid entity {} while reading star config file {}",
+          pProperty->Value(), sConfigFile);
     }
 
     pProperty = pProperty->NextSiblingElement();
@@ -177,11 +176,8 @@ Stars::Stars(const std::string& sConfigFile)
   if (!sBackgroundTexture2.empty())
     setBackgroundTexture2(sBackgroundTexture2);
 
-  // mCatalogs =
-
   if (sStarTexture.empty()) {
-    std::cout << "Failed to load star config file " << sConfigFile << ": "
-              << "StarTexture has to be set!" << std::endl;
+    spdlog::error("Failed to load star config file {}: StarTexture has to be set!", sConfigFile);
     return;
   }
 
@@ -523,8 +519,8 @@ void Stars::init(const std::string& sStarTextureFile, const std::string& sCacheF
       readStarsFromCatalog(it->first, it->second);
 
       if (mCatalogs.size() > 1) {
-        std::cout << "[Stars] Failed to load star catalogs: "
-                  << "Gaia cannot be combined with other catalogues!" << std::endl;
+        spdlog::error(
+            "Failed to load star catalogs: Gaia cannot be combined with other catalogues!");
       }
     } else {
       it = mCatalogs.find(CatalogType::eHipparcos);
@@ -541,8 +537,7 @@ void Stars::init(const std::string& sStarTextureFile, const std::string& sCacheF
         if (mCatalogs.find(CatalogType::eTycho) == mCatalogs.end()) {
           readStarsFromCatalog(it->first, it->second);
         } else {
-          std::cout << "[Stars] Failed to load Tycho2 catalog: "
-                    << "Tycho already loaded!" << std::endl;
+          spdlog::error("Failed to load Tycho2 catalog: Tycho already loaded!");
         }
       }
     }
@@ -714,8 +709,8 @@ void Stars::writeStarCache(const std::string& sCacheFile) const {
   file.open(sCacheFile.c_str(), std::ios::out | std::ios::binary);
   if (file.is_open()) {
     // write serialized star data
-    std::cout << "[Stars] Writing " << mStars.size() << " stars(" << serializer.GetBufferSize()
-              << " bytes) into " << sCacheFile << std::endl;
+    spdlog::info("Writing {} stars ({} bytes) into {}", mStars.size(), serializer.GetBufferSize(),
+        sCacheFile);
     file.write((const char*)serializer.GetBuffer(), serializer.GetBufferSize());
     file.close();
   } else {
