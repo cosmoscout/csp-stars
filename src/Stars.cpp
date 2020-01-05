@@ -103,7 +103,7 @@ Stars::Stars(const std::string& sConfigFile)
   VistaXML::TiXmlDocument xDoc(sConfigFile);
 
   if (!xDoc.LoadFile()) {
-    spdlog::error("Failed to load star config file {}: Cannont open file!", sConfigFile);
+    spdlog::error("Failed to load star config file '{}': Cannot open file!", sConfigFile);
     return;
   }
 
@@ -112,7 +112,8 @@ Stars::Stars(const std::string& sConfigFile)
 
   // Read Data
   if (std::string(pRoot->Value()) != "StarConfig") {
-    spdlog::error("Failed to read star config file {}!", sConfigFile);
+    spdlog::error(
+        "Failed to read star config file '{}': No 'StarConfig' root element found!", sConfigFile);
     return;
   }
 
@@ -160,11 +161,11 @@ Stars::Stars(const std::string& sConfigFile)
         ssValue >> mBackgroundColor2[0] >> mBackgroundColor2[1] >> mBackgroundColor2[2] >>
             mBackgroundColor2[3];
       } else {
-        spdlog::warn(
-            "Ignoring invalid entity {} while reading star config file {}", sName, sConfigFile);
+        spdlog::warn("Ignoring invalid entity '{}' while reading star config file '{}'!", sName,
+            sConfigFile);
       }
     } else {
-      spdlog::warn("Ignoring invalid entity {} while reading star config file {}",
+      spdlog::warn("Ignoring invalid entity '{}' while reading star config file '{}'!",
           pProperty->Value(), sConfigFile);
     }
 
@@ -177,7 +178,7 @@ Stars::Stars(const std::string& sConfigFile)
     setBackgroundTexture2(sBackgroundTexture2);
 
   if (sStarTexture.empty()) {
-    spdlog::error("Failed to load star config file {}: StarTexture has to be set!", sConfigFile);
+    spdlog::error("Failed to load star config file '{}': StarTexture has to be set!", sConfigFile);
     return;
   }
 
@@ -545,7 +546,7 @@ void Stars::init(const std::string& sStarTextureFile, const std::string& sCacheF
     if (!mStars.empty()) {
       writeStarCache(sCacheFile);
     } else {
-      spdlog::warn("Loaded no stars. Stars will not work properly.");
+      spdlog::warn("Loaded no stars! Stars will not work properly.");
     }
   }
 
@@ -579,14 +580,14 @@ void Stars::init(const std::string& sStarTextureFile, const std::string& sCacheF
 
 bool Stars::readStarsFromCatalog(CatalogType eType, const std::string& sFilename) {
   bool success = false;
-  spdlog::info("Reading {}...", sFilename);
+  spdlog::info("Reading star catalog '{}'.", sFilename);
 
   std::ifstream file;
 
   try {
     file.open(sFilename.c_str(), std::ifstream::in);
   } catch (std::exception& e) {
-    spdlog::error("Failed to open catalog file {}: {}", sFilename, e.what());
+    spdlog::error("Failed to open catalog file '{}': {}", sFilename, e.what());
   }
 
   if (file.is_open()) {
@@ -674,7 +675,7 @@ bool Stars::readStarsFromCatalog(CatalogType eType, const std::string& sFilename
 
     spdlog::info("Read a total of {} stars.", mStars.size());
   } else {
-    spdlog::error("Failed to open catalog file {}!", sFilename);
+    spdlog::error("Failed to load stars: Cannot open catalog file '{}'!", sFilename);
   }
 
   return success;
@@ -709,12 +710,13 @@ void Stars::writeStarCache(const std::string& sCacheFile) const {
   file.open(sCacheFile.c_str(), std::ios::out | std::ios::binary);
   if (file.is_open()) {
     // write serialized star data
-    spdlog::info("Writing {} stars ({} bytes) into {}", mStars.size(), serializer.GetBufferSize(),
-        sCacheFile);
+    spdlog::info("Writing {} stars ({} bytes) into '{}'.", mStars.size(),
+        serializer.GetBufferSize(), sCacheFile);
     file.write((const char*)serializer.GetBuffer(), serializer.GetBufferSize());
     file.close();
   } else {
-    spdlog::error("Failed to open file {} for writing binary star data!", sCacheFile);
+    spdlog::error(
+        "Failed to write binary star data: Cannot open file '{}' for writing!", sCacheFile);
   }
 }
 
