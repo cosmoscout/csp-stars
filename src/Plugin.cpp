@@ -13,8 +13,6 @@
 
 #include <VistaKernel/GraphicsManager/VistaSceneGraph.h>
 #include <VistaKernelOpenSGExt/VistaOpenSGMaterialTools.h>
-#include <spdlog/sinks/stdout_color_sinks.h>
-#include <spdlog/spdlog.h>
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -172,7 +170,7 @@ void Plugin::deInit() {
   mGuiManager->getGui()->unregisterCallback("set_enable_stars");
   mGuiManager->getGui()->unregisterCallback("set_enable_stars_grid");
   mGuiManager->getGui()->unregisterCallback("set_enable_stars_figures");
-  
+
   spdlog::info("Unloading done.");
 }
 
