@@ -538,7 +538,7 @@ void Stars::init(const std::string& sStarTextureFile, const std::string& sCacheF
         if (mCatalogs.find(CatalogType::eTycho) == mCatalogs.end()) {
           readStarsFromCatalog(it->first, it->second);
         } else {
-          spdlog::error("Failed to load Tycho2 catalog: Tycho already loaded!");
+          spdlog::warn("Failed to load Tycho2 catalog: Tycho already loaded!");
         }
       }
     }
