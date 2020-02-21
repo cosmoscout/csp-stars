@@ -9,6 +9,7 @@
 #include "../../../src/cs-core/GraphicsEngine.hpp"
 #include "../../../src/cs-core/GuiManager.hpp"
 #include "../../../src/cs-core/SolarSystem.hpp"
+#include "../../../src/cs-utils/logger.hpp"
 
 #include <VistaKernel/GraphicsManager/VistaSceneGraph.h>
 #include <VistaKernelOpenSGExt/VistaOpenSGMaterialTools.h>
@@ -59,12 +60,16 @@ void from_json(const nlohmann::json& j, Plugin::Settings& o) {
 
 Plugin::Plugin()
     : mProperties(std::make_shared<Properties>()) {
+
+  // Create default logger for this plugin.
+  spdlog::set_default_logger(cs::utils::logger::createLogger("csp-stars"));
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void Plugin::init() {
-  std::cout << "Loading: CosmoScout VR Plugin Stars" << std::endl;
+
+  spdlog::info("Loading plugin...");
 
   // init stars
   mPluginSettings = mAllSettings->mPlugins.at("csp-stars");
@@ -118,24 +123,24 @@ void Plugin::init() {
   mGuiManager->addSettingsSectionToSideBarFromHTML(
       "Stars", "star", "../share/resources/gui/stars_settings.html");
 
-  mGuiManager->addScriptToSideBarFromJS("../share/resources/gui/js/stars_settings.js");
+  mGuiManager->addScriptToGuiFromJS("../share/resources/gui/js/csp-stars.js");
 
-  mGuiManager->getSideBar()->registerCallback<bool>(
+  mGuiManager->getGui()->registerCallback<bool>(
       "set_enable_stars", ([this](bool value) { mProperties->mEnabled = value; }));
 
-  mGuiManager->getSideBar()->registerCallback<bool>(
+  mGuiManager->getGui()->registerCallback<bool>(
       "set_enable_stars_grid", ([this](bool value) { mProperties->mEnableCelestialGrid = value; }));
 
-  mGuiManager->getSideBar()->registerCallback<bool>("set_enable_stars_figures",
+  mGuiManager->getGui()->registerCallback<bool>("set_enable_stars_figures",
       ([this](bool value) { mProperties->mEnableStarFigures = value; }));
 
-  mGuiManager->getSideBar()->registerCallback<double>("set_star_luminance_boost",
+  mGuiManager->getGui()->registerCallback<double>("set_star_luminance_boost",
       ([this](double value) { mProperties->mLuminanceMultiplicator = std::exp(value); }));
 
-  mGuiManager->getSideBar()->registerCallback<double>(
+  mGuiManager->getGui()->registerCallback<double>(
       "set_star_size", ([this](double value) { mStars->setSolidAngle(value * 0.0001); }));
 
-  mGuiManager->getSideBar()->registerCallback<double, double>(
+  mGuiManager->getGui()->registerCallback<double, double>(
       "set_star_magnitude", ([this](double val, double handle) {
         if (handle == 0.0)
           mStars->setMinMagnitude(val);
@@ -143,42 +148,46 @@ void Plugin::init() {
           mStars->setMaxMagnitude(val);
       }));
 
-  mGuiManager->getSideBar()->registerCallback(
+  mGuiManager->getGui()->registerCallback(
       "set_star_draw_mode_0", ([this]() { mStars->setDrawMode(Stars::ePoint); }));
 
-  mGuiManager->getSideBar()->registerCallback(
+  mGuiManager->getGui()->registerCallback(
       "set_star_draw_mode_1", ([this]() { mStars->setDrawMode(Stars::eSmoothPoint); }));
 
-  mGuiManager->getSideBar()->registerCallback(
+  mGuiManager->getGui()->registerCallback(
       "set_star_draw_mode_2", ([this]() { mStars->setDrawMode(Stars::eDisc); }));
 
-  mGuiManager->getSideBar()->registerCallback(
+  mGuiManager->getGui()->registerCallback(
       "set_star_draw_mode_3", ([this]() { mStars->setDrawMode(Stars::eSmoothDisc); }));
 
-  mGuiManager->getSideBar()->registerCallback(
+  mGuiManager->getGui()->registerCallback(
       "set_star_draw_mode_4", ([this]() { mStars->setDrawMode(Stars::eSprite); }));
 
   mGraphicsEngine->pEnableHDR.onChange().connect(
       [this](bool value) { mStars->setEnableHDR(value); });
+
+  spdlog::info("Loading done.");
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void Plugin::deInit() {
+  spdlog::info("Unloading plugin...");
+
   mSolarSystem->unregisterAnchor(mStarsTransform);
   mSceneGraph->GetRoot()->DisconnectChild(mStarsTransform.get());
 
-  mGuiManager->getSideBar()->unregisterCallback("set_enable_stars");
-  mGuiManager->getSideBar()->unregisterCallback("set_enable_stars_grid");
-  mGuiManager->getSideBar()->unregisterCallback("set_enable_stars_figures");
-  mGuiManager->getSideBar()->unregisterCallback("set_star_luminance_boost");
-  mGuiManager->getSideBar()->unregisterCallback("set_star_size");
-  mGuiManager->getSideBar()->unregisterCallback("set_star_magnitude");
-  mGuiManager->getSideBar()->unregisterCallback("set_star_draw_mode_0");
-  mGuiManager->getSideBar()->unregisterCallback("set_star_draw_mode_1");
-  mGuiManager->getSideBar()->unregisterCallback("set_star_draw_mode_2");
-  mGuiManager->getSideBar()->unregisterCallback("set_star_draw_mode_3");
-  mGuiManager->getSideBar()->unregisterCallback("set_star_draw_mode_4");
+  mGuiManager->getGui()->unregisterCallback("set_enable_stars");
+  mGuiManager->getGui()->unregisterCallback("set_enable_stars_grid");
+  mGuiManager->getGui()->unregisterCallback("set_enable_stars_figures");
+  mGuiManager->getGui()->unregisterCallback("set_star_luminance_boost");
+  mGuiManager->getGui()->unregisterCallback("set_star_size");
+  mGuiManager->getGui()->unregisterCallback("set_star_magnitude");
+  mGuiManager->getGui()->unregisterCallback("set_star_draw_mode_0");
+  mGuiManager->getGui()->unregisterCallback("set_star_draw_mode_1");
+  mGuiManager->getGui()->unregisterCallback("set_star_draw_mode_2");
+  mGuiManager->getGui()->unregisterCallback("set_star_draw_mode_3");
+  mGuiManager->getGui()->unregisterCallback("set_star_draw_mode_4");
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -13,15 +13,18 @@
 
 #include "../../../src/cs-graphics/TextureLoader.hpp"
 
+#include <VistaInterProcComm/Connections/VistaByteBufferDeSerializer.h>
+#include <VistaInterProcComm/Connections/VistaByteBufferSerializer.h>
 #include <VistaKernel/GraphicsManager/VistaGeometryFactory.h>
 #include <VistaKernel/GraphicsManager/VistaOpenGLNode.h>
 #include <VistaKernel/GraphicsManager/VistaSceneGraph.h>
-
+#include <VistaOGLExt/VistaBufferObject.h>
+#include <VistaOGLExt/VistaGLSLShader.h>
 #include <VistaOGLExt/VistaOGLUtils.h>
 #include <VistaOGLExt/VistaTexture.h>
-
-#include <VistaInterProcComm/Connections/VistaByteBufferDeSerializer.h>
-#include <VistaInterProcComm/Connections/VistaByteBufferSerializer.h>
+#include <VistaOGLExt/VistaVertexArrayObject.h>
+#include <VistaTools/tinyXML/tinyxml.h>
+#include <spdlog/spdlog.h>
 
 #include <fstream>
 
@@ -434,8 +437,9 @@ void Stars::init(const std::string& sStarTextureFile, const std::string& sCacheF
       readStarsFromCatalog(it->first, it->second);
 
     it = mCatalogs.find(CatalogType::eTycho);
-    if (it != mCatalogs.end())
+    if (it != mCatalogs.end()) {
       readStarsFromCatalog(it->first, it->second);
+    }
 
     it = mCatalogs.find(CatalogType::eTycho2);
     if (it != mCatalogs.end()) {
@@ -443,15 +447,14 @@ void Stars::init(const std::string& sStarTextureFile, const std::string& sCacheF
       if (mCatalogs.find(CatalogType::eTycho) == mCatalogs.end()) {
         readStarsFromCatalog(it->first, it->second);
       } else {
-        std::cout << "Failed to load Tycho2 catalog: "
-                  << "Tycho already loaded!" << std::endl;
+        spdlog::warn("Failed to load Tycho2 catalog: Tycho already loaded!");
       }
     }
 
     if (!mStars.empty()) {
       writeStarCache(sCacheFile);
     } else {
-      std::cerr << "Loaded no stars. Stars will not work properly." << std::endl;
+      spdlog::warn("Loaded no stars! Stars will not work properly.");
     }
   }
 
@@ -471,16 +474,16 @@ void Stars::init(const std::string& sStarTextureFile, const std::string& sCacheF
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool Stars::readStarsFromCatalog(CatalogType eType, const std::string& filename) {
+bool Stars::readStarsFromCatalog(CatalogType type, const std::string& filename) {
   bool success = false;
-  std::cout << "Reading " << filename << " ..." << std::endl;
+  spdlog::info("Reading star catalog '{}'.", filename);
 
   std::ifstream file;
 
   try {
     file.open(filename.c_str(), std::ifstream::in);
   } catch (std::exception& e) {
-    std::cerr << " Cannot open catalog file " << filename << " (" << e.what() << ") !" << std::endl;
+    spdlog::error("Failed to open catalog file '{}': {}", filename, e.what());
   }
 
   if (file.is_open()) {
@@ -510,8 +513,8 @@ bool Stars::readStarsFromCatalog(CatalogType eType, const std::string& filename)
       if (items.size() > 12) {
         // skip if part of hipparcos catalogue
         int tmp;
-        if (eType != CatalogType::eHipparcos && loadHipparcos &&
-            fromString<int>(items[cColumnMapping[cs::utils::enumCast(eType)]
+        if (type != CatalogType::eHipparcos && loadHipparcos &&
+            fromString<int>(items[cColumnMapping[cs::utils::enumCast(type)]
                                                 [cs::utils::enumCast(CatalogColumn::eHipp)]],
                 tmp)) {
           continue;
@@ -522,25 +525,25 @@ bool Stars::readStarsFromCatalog(CatalogType eType, const std::string& filename)
 
         Star star;
         successStoreData &=
-            fromString<float>(items[cColumnMapping[cs::utils::enumCast(eType)]
+            fromString<float>(items[cColumnMapping[cs::utils::enumCast(type)]
                                                   [cs::utils::enumCast(CatalogColumn::eVmag)]],
                 star.mVMagnitude);
         successStoreData &=
-            fromString<float>(items[cColumnMapping[cs::utils::enumCast(eType)]
+            fromString<float>(items[cColumnMapping[cs::utils::enumCast(type)]
                                                   [cs::utils::enumCast(CatalogColumn::eBmag)]],
                 star.mBMagnitude);
         successStoreData &=
-            fromString<float>(items[cColumnMapping[cs::utils::enumCast(eType)]
+            fromString<float>(items[cColumnMapping[cs::utils::enumCast(type)]
                                                   [cs::utils::enumCast(CatalogColumn::eRect)]],
                 star.mAscension);
         successStoreData &=
-            fromString<float>(items[cColumnMapping[cs::utils::enumCast(eType)]
+            fromString<float>(items[cColumnMapping[cs::utils::enumCast(type)]
                                                   [cs::utils::enumCast(CatalogColumn::eDecl)]],
                 star.mDeclination);
 
-        if (cColumnMapping[cs::utils::enumCast(eType)][cs::utils::enumCast(CatalogColumn::ePara)] >
+        if (cColumnMapping[cs::utils::enumCast(type)][cs::utils::enumCast(CatalogColumn::ePara)] >
             0) {
-          if (!fromString<float>(items[cColumnMapping[cs::utils::enumCast(eType)]
+          if (!fromString<float>(items[cColumnMapping[cs::utils::enumCast(type)]
                                                      [cs::utils::enumCast(CatalogColumn::ePara)]],
                   star.mParallax)) {
             star.mParallax = 0;
@@ -559,16 +562,15 @@ bool Stars::readStarsFromCatalog(CatalogType eType, const std::string& filename)
 
       // print progress status
       if (mStars.size() % 10000 == 0) {
-        std::cout << "(Read " << mStars.size() << " stars so far)" << std::endl;
+        spdlog::info("Read {} stars so far...", mStars.size());
       }
     }
     file.close();
     success = true;
 
-    std::cout << "Read total of "
-              << " (" << mStars.size() << ")stars." << std::endl;
+    spdlog::info("Read a total of {} stars.", mStars.size());
   } else {
-    std::cerr << "Could not open catalog file " << filename << "!" << std::endl;
+    spdlog::error("Failed to load stars: Cannot open catalog file '{}'!", filename);
   }
 
   return success;
@@ -603,13 +605,13 @@ void Stars::writeStarCache(const std::string& sCacheFile) const {
   file.open(sCacheFile.c_str(), std::ios::out | std::ios::binary);
   if (file.is_open()) {
     // write serialized star data
-    std::cout << "Writing " << mStars.size() << " stars(" << serializer.GetBufferSize()
-              << " bytes) into " << sCacheFile << std::endl;
+    spdlog::info("Writing {} stars ({} bytes) into '{}'.", mStars.size(),
+        serializer.GetBufferSize(), sCacheFile);
     file.write((const char*)serializer.GetBuffer(), serializer.GetBufferSize());
     file.close();
   } else {
-    std::cerr << "Could not open file " << sCacheFile << " for writing binary star data!"
-              << std::endl;
+    spdlog::error(
+        "Failed to write binary star data: Cannot open file '{}' for writing!", sCacheFile);
   }
 }
 
@@ -667,13 +669,13 @@ bool Stars::readStarCache(const std::string& sCacheFile) {
 
       // print progress status
       if (mStars.size() % 100000 == 0) {
-        std::cout << "(Read " << mStars.size() << " stars so far)" << std::endl;
+        spdlog::info("Read {} stars so far...", mStars.size());
       }
     }
 
     success = true;
 
-    std::cout << "Read total of " << mStars.size() << " stars" << std::endl;
+    spdlog::info("Read a total of {} stars.", mStars.size());
   }
 
   return success;
