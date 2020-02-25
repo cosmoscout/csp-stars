@@ -148,13 +148,13 @@ void Plugin::init() {
       "Stars", "star", "../share/resources/gui/stars_settings.html");
 
   mGuiManager->getGui()->registerCallback<bool>(
-      "setEnableStars", ([this](bool value) { mProperties->mEnabled = value; }));
+      "stars.setEnabled", ([this](bool value) { mProperties->mEnabled = value; }));
 
   mGuiManager->getGui()->registerCallback<bool>(
-      "setEnableStarsGrid", ([this](bool value) { mProperties->mEnableCelestialGrid = value; }));
+      "stars.setEnableGrid", ([this](bool value) { mProperties->mEnableCelestialGrid = value; }));
 
   mGuiManager->getGui()->registerCallback<bool>(
-      "setEnableStarsFigures", ([this](bool value) { mProperties->mEnableStarFigures = value; }));
+      "stars.setEnableFigures", ([this](bool value) { mProperties->mEnableStarFigures = value; }));
 
   spdlog::info("Loading done.");
 }
@@ -167,9 +167,9 @@ void Plugin::deInit() {
   mSolarSystem->unregisterAnchor(mStarsTransform);
   mSceneGraph->GetRoot()->DisconnectChild(mStarsTransform.get());
 
-  mGuiManager->getGui()->unregisterCallback("setEnableStars");
-  mGuiManager->getGui()->unregisterCallback("setEnableStarsGrid");
-  mGuiManager->getGui()->unregisterCallback("setEnableStarsFigures");
+  mGuiManager->getGui()->unregisterCallback("stars.setEnabled");
+  mGuiManager->getGui()->unregisterCallback("stars.setEnableGrid");
+  mGuiManager->getGui()->unregisterCallback("stars.setEnableFigures");
 
   spdlog::info("Unloading done.");
 }
