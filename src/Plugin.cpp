@@ -153,8 +153,8 @@ void Plugin::init() {
   mGuiManager->getGui()->registerCallback<bool>(
       "setEnableStarsGrid", ([this](bool value) { mProperties->mEnableCelestialGrid = value; }));
 
-  mGuiManager->getGui()->registerCallback<bool>("setEnableStarsFigures",
-      ([this](bool value) { mProperties->mEnableStarFigures = value; }));
+  mGuiManager->getGui()->registerCallback<bool>(
+      "setEnableStarsFigures", ([this](bool value) { mProperties->mEnableStarFigures = value; }));
 
   spdlog::info("Loading done.");
 }
