@@ -147,13 +147,17 @@ void Plugin::init() {
   mGuiManager->addSettingsSectionToSideBarFromHTML(
       "Stars", "star", "../share/resources/gui/stars_settings.html");
 
-  mGuiManager->getGui()->registerCallback(
-      "stars.setEnabled", std::function([this](bool value) { mProperties->mEnabled = value; }));
+  mGuiManager->getGui()->registerCallback("stars.setEnabled",
+      "Enables or disables the rendering of stars.",
+      std::function([this](bool value) { mProperties->mEnabled = value; }));
 
   mGuiManager->getGui()->registerCallback("stars.setEnableGrid",
+      "If stars are enabled, this enables the rendering of a background grid in celestial "
+      "coordinates.",
       std::function([this](bool value) { mProperties->mEnableCelestialGrid = value; }));
 
   mGuiManager->getGui()->registerCallback("stars.setEnableFigures",
+      "If stars are enabled, this enables the rendering of star figures.",
       std::function([this](bool value) { mProperties->mEnableStarFigures = value; }));
 
   spdlog::info("Loading done.");
