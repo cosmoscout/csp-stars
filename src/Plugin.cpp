@@ -125,43 +125,57 @@ void Plugin::init() {
 
   mGuiManager->addScriptToGuiFromJS("../share/resources/gui/js/csp-stars.js");
 
-  mGuiManager->getGui()->registerCallback<bool>(
-      "set_enable_stars", ([this](bool value) { mProperties->mEnabled = value; }));
+  mGuiManager->getGui()->registerCallback("stars.setEnabled",
+      "Enables or disables the rendering of stars.",
+      std::function([this](bool value) { mProperties->mEnabled = value; }));
 
-  mGuiManager->getGui()->registerCallback<bool>(
-      "set_enable_stars_grid", ([this](bool value) { mProperties->mEnableCelestialGrid = value; }));
+  mGuiManager->getGui()->registerCallback("stars.setEnableGrid",
+      "If stars are enabled, this enables the rendering of a background grid in celestial "
+      "coordinates.",
+      std::function([this](bool value) { mProperties->mEnableCelestialGrid = value; }));
 
-  mGuiManager->getGui()->registerCallback<bool>("set_enable_stars_figures",
-      ([this](bool value) { mProperties->mEnableStarFigures = value; }));
+  mGuiManager->getGui()->registerCallback("stars.setEnableFigures",
+      "If stars are enabled, this enables the rendering of star figures.",
+      std::function([this](bool value) { mProperties->mEnableStarFigures = value; }));
 
-  mGuiManager->getGui()->registerCallback<double>("set_star_luminance_boost",
-      ([this](double value) { mProperties->mLuminanceMultiplicator = std::exp(value); }));
+  mGuiManager->getGui()->registerCallback("stars.setLuminanceBoost",
+      "Adds an artificial brightness boost to the stars." std::function(
+          [this](double value) { mProperties->mLuminanceMultiplicator = std::exp(value); }));
 
-  mGuiManager->getGui()->registerCallback<double>(
-      "set_star_size", ([this](double value) { mStars->setSolidAngle(value * 0.0001); }));
+  mGuiManager->getGui()->registerCallback("stars.setSize",
+      "Sets the apparent size of stars on screen.",
+      std::function([this](double value) { mStars->setSolidAngle(value * 0.0001); }));
 
-  mGuiManager->getGui()->registerCallback<double, double>(
-      "set_star_magnitude", ([this](double val, double handle) {
+  mGuiManager->getGui()->registerCallback("stars.setMagnitude",
+      "Sets the maximum or minimum magnitude for stars. The first value is the magnitude, the "
+      "second determines wich end to set: Zero for the minimum magnitude; one for the maximum "
+      "magnitude.",
+      std::function([this](double val, double handle) {
         if (handle == 0.0)
           mStars->setMinMagnitude(val);
         else
           mStars->setMaxMagnitude(val);
       }));
 
-  mGuiManager->getGui()->registerCallback(
-      "set_star_draw_mode_0", ([this]() { mStars->setDrawMode(Stars::ePoint); }));
+  mGuiManager->getGui()->registerCallback("stars.setDrawMode0",
+      "Enables point draw mode for the stars.",
+      std::function([this]() { mStars->setDrawMode(Stars::ePoint); }));
 
-  mGuiManager->getGui()->registerCallback(
-      "set_star_draw_mode_1", ([this]() { mStars->setDrawMode(Stars::eSmoothPoint); }));
+  mGuiManager->getGui()->registerCallback("stars.setDrawMode1",
+      "Enables smooth point draw mode for the stars.",
+      std::function([this]() { mStars->setDrawMode(Stars::eSmoothPoint); }));
 
-  mGuiManager->getGui()->registerCallback(
-      "set_star_draw_mode_2", ([this]() { mStars->setDrawMode(Stars::eDisc); }));
+  mGuiManager->getGui()->registerCallback("stars.setDrawMode2",
+      "Enables disc draw mode for the stars.",
+      std::function([this]() { mStars->setDrawMode(Stars::eDisc); }));
 
-  mGuiManager->getGui()->registerCallback(
-      "set_star_draw_mode_3", ([this]() { mStars->setDrawMode(Stars::eSmoothDisc); }));
+  mGuiManager->getGui()->registerCallback("stars.setDrawMode3",
+      "Enables smooth disc draw mode for the stars.",
+      std::function([this]() { mStars->setDrawMode(Stars::eSmoothDisc); }));
 
-  mGuiManager->getGui()->registerCallback(
-      "set_star_draw_mode_4", ([this]() { mStars->setDrawMode(Stars::eSprite); }));
+  mGuiManager->getGui()->registerCallback("stars.setDrawMode4",
+      "Enables sprite draw mode for the stars.",
+      std::function([this]() { mStars->setDrawMode(Stars::eSprite); }));
 
   mGraphicsEngine->pEnableHDR.onChange().connect(
       [this](bool value) { mStars->setEnableHDR(value); });
@@ -177,17 +191,19 @@ void Plugin::deInit() {
   mSolarSystem->unregisterAnchor(mStarsTransform);
   mSceneGraph->GetRoot()->DisconnectChild(mStarsTransform.get());
 
-  mGuiManager->getGui()->unregisterCallback("set_enable_stars");
-  mGuiManager->getGui()->unregisterCallback("set_enable_stars_grid");
-  mGuiManager->getGui()->unregisterCallback("set_enable_stars_figures");
-  mGuiManager->getGui()->unregisterCallback("set_star_luminance_boost");
-  mGuiManager->getGui()->unregisterCallback("set_star_size");
-  mGuiManager->getGui()->unregisterCallback("set_star_magnitude");
-  mGuiManager->getGui()->unregisterCallback("set_star_draw_mode_0");
-  mGuiManager->getGui()->unregisterCallback("set_star_draw_mode_1");
-  mGuiManager->getGui()->unregisterCallback("set_star_draw_mode_2");
-  mGuiManager->getGui()->unregisterCallback("set_star_draw_mode_3");
-  mGuiManager->getGui()->unregisterCallback("set_star_draw_mode_4");
+  mGuiManager->getGui()->unregisterCallback("stars.setLuminanceBoost");
+  mGuiManager->getGui()->unregisterCallback("stars.setSize");
+  mGuiManager->getGui()->unregisterCallback("stars.setMagnitude");
+  mGuiManager->getGui()->unregisterCallback("stars.setDrawMode0");
+  mGuiManager->getGui()->unregisterCallback("stars.setDrawMode1");
+  mGuiManager->getGui()->unregisterCallback("stars.setDrawMode2");
+  mGuiManager->getGui()->unregisterCallback("stars.setDrawMode3");
+  mGuiManager->getGui()->unregisterCallback("stars.setDrawMode4");
+  mGuiManager->getGui()->unregisterCallback("stars.setEnabled");
+  mGuiManager->getGui()->unregisterCallback("stars.setEnableGrid");
+  mGuiManager->getGui()->unregisterCallback("stars.setEnableFigures");
+
+  spdlog::info("Unloading done.");
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
