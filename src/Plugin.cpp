@@ -139,8 +139,9 @@ void Plugin::init() {
       std::function([this](bool value) { mProperties->mEnableStarFigures = value; }));
 
   mGuiManager->getGui()->registerCallback("stars.setLuminanceBoost",
-      "Adds an artificial brightness boost to the stars." std::function(
-          [this](double value) { mProperties->mLuminanceMultiplicator = std::exp(value); }));
+      "Adds an artificial brightness boost to the stars.", std::function([this](double value) {
+        mProperties->mLuminanceMultiplicator = std::exp(value);
+      }));
 
   mGuiManager->getGui()->registerCallback("stars.setSize",
       "Sets the apparent size of stars on screen.",
