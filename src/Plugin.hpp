@@ -52,6 +52,8 @@ class Plugin : public cs::core::PluginBase {
   std::shared_ptr<cs::scene::CelestialAnchorNode> mStarsTransform;
   VistaOpenGLNode*                                mStarsNode;
   std::shared_ptr<Properties>                     mProperties;
+
+  int mEnableHDRConnection = -1;
 };
 
 } // namespace csp::stars

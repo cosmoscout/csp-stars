@@ -178,7 +178,7 @@ void Plugin::init() {
       "Enables sprite draw mode for the stars.",
       std::function([this]() { mStars->setDrawMode(Stars::eSprite); }));
 
-  mGraphicsEngine->pEnableHDR.onChange().connect(
+  mEnableHDRConnection = mGraphicsEngine->pEnableHDR.onChange().connect(
       [this](bool value) { mStars->setEnableHDR(value); });
 
   spdlog::info("Loading done.");
@@ -191,6 +191,8 @@ void Plugin::deInit() {
 
   mSolarSystem->unregisterAnchor(mStarsTransform);
   mSceneGraph->GetRoot()->DisconnectChild(mStarsTransform.get());
+
+  mGraphicsEngine->pEnableHDR.onChange().disconnect(mEnableHDRConnection);
 
   mGuiManager->getGui()->unregisterCallback("stars.setLuminanceBoost");
   mGuiManager->getGui()->unregisterCallback("stars.setSize");
