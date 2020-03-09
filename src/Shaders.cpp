@@ -262,6 +262,7 @@ uniform mat4 uInvP;
 uniform vec2 uResolution;
 uniform float uMinMagnitude;
 uniform float uMaxMagnitude;
+uniform float uSolidAngle;
 
 // outputs
 out vec4 oLuminance;
