@@ -47,8 +47,7 @@ void from_json(const nlohmann::json& j, Plugin::Settings& o) {
       o.mBackgroundColor2[i] = b2.at(i);
     }
 
-    o.mStarTexture = cs::core::parseProperty<std::string>("starTexture", j);
-
+    o.mStarTexture      = cs::core::parseProperty<std::string>("starTexture", j);
     o.mCacheFile        = cs::core::parseOptional<std::string>("cacheFile", j);
     o.mHipparcosCatalog = cs::core::parseOptional<std::string>("hipparcosCatalog", j);
     o.mTychoCatalog     = cs::core::parseOptional<std::string>("tychoCatalog", j);
@@ -71,7 +70,7 @@ void Plugin::init() {
 
   spdlog::info("Loading plugin...");
 
-  // init stars
+  // Read star settings.
   mPluginSettings = mAllSettings->mPlugins.at("csp-stars");
 
   std::map<Stars::CatalogType, std::string> catalogs;
@@ -93,9 +92,10 @@ void Plugin::init() {
     cacheFile = *mPluginSettings.mCacheFile;
   }
 
+  // Create the Stars object based on the settings.
   mStars = std::make_shared<Stars>(catalogs, mPluginSettings.mStarTexture, cacheFile);
 
-  // set star settings
+  // Configure the stars based on some additional settings.
   auto& bg1 = mPluginSettings.mBackgroundColor1;
   auto& bg2 = mPluginSettings.mBackgroundColor2;
 
@@ -105,7 +105,7 @@ void Plugin::init() {
   mStars->setBackgroundColor1(VistaColor(bg1.r, bg1.g, bg1.b, bg1.a));
   mStars->setBackgroundColor2(VistaColor(bg2.r, bg2.g, bg2.b, bg2.a));
 
-  // add to scenegraph
+  // Add the stars to the scenegraph.
   mStarsTransform = std::make_shared<cs::scene::CelestialAnchorNode>(
       mSceneGraph->GetRoot(), mSceneGraph->GetNodeBridge(), "", "Solar System Barycenter", "J2000");
   mSolarSystem->registerAnchor(mStarsTransform);
@@ -117,14 +117,17 @@ void Plugin::init() {
   VistaOpenSGMaterialTools::SetSortKeyOnSubtree(
       mStarsTransform.get(), static_cast<int>(cs::utils::DrawOrder::eStars));
 
+  // Toggle the stars node when the public property is changed.
   mProperties->mEnabled.onChange().connect(
       [this](bool val) { this->mStarsNode->SetIsEnabled(val); });
 
+  // Add the stars user interface components to the CosmoScout user interface.
   mGuiManager->addSettingsSectionToSideBarFromHTML(
       "Stars", "star", "../share/resources/gui/stars_settings.html");
 
   mGuiManager->addScriptToGuiFromJS("../share/resources/gui/js/csp-stars.js");
 
+  // Register JavaScript callbacks.
   mGuiManager->getGui()->registerCallback("stars.setEnabled",
       "Enables or disables the rendering of stars.",
       std::function([this](bool value) { mProperties->mEnabled = value; }));
@@ -212,6 +215,10 @@ void Plugin::deInit() {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void Plugin::update() {
+
+  // Update the stars brightness based on the scene's pApproximateSceneBrightness. This is to fade
+  // out the stars when we are close to a Planet. If HDR rendering is enabled, we will not change
+  // the star's brightness.
   float fIntensity = mGraphicsEngine->pApproximateSceneBrightness.get();
 
   if (mGraphicsEngine->pEnableHDR.get()) {
