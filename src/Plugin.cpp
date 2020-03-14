@@ -93,7 +93,7 @@ void Plugin::init() {
   }
 
   // Create the Stars object based on the settings.
-  mStars = std::make_shared<Stars>(catalogs, mPluginSettings.mStarTexture, cacheFile);
+  mStars = std::make_unique<Stars>(catalogs, mPluginSettings.mStarTexture, cacheFile);
 
   // Configure the stars based on some additional settings.
   auto& bg1 = mPluginSettings.mBackgroundColor1;
@@ -112,7 +112,7 @@ void Plugin::init() {
 
   mSceneGraph->GetRoot()->AddChild(mStarsTransform.get());
 
-  mStarsNode = mSceneGraph->NewOpenGLNode(mStarsTransform.get(), mStars.get());
+  mStarsNode.reset(mSceneGraph->NewOpenGLNode(mStarsTransform.get(), mStars.get()));
 
   VistaOpenSGMaterialTools::SetSortKeyOnSubtree(
       mStarsTransform.get(), static_cast<int>(cs::utils::DrawOrder::eStars));
@@ -184,6 +184,8 @@ void Plugin::init() {
   mEnableHDRConnection = mGraphicsEngine->pEnableHDR.onChange().connect(
       [this](bool value) { mStars->setEnableHDR(value); });
 
+  mGraphicsEngine->pEnableHDR.touchFor(mEnableHDRConnection);
+
   spdlog::info("Loading done.");
 }
 
@@ -196,6 +198,10 @@ void Plugin::deInit() {
   mSceneGraph->GetRoot()->DisconnectChild(mStarsTransform.get());
 
   mGraphicsEngine->pEnableHDR.onChange().disconnect(mEnableHDRConnection);
+
+  mGuiManager->removeSettingsSection("Stars");
+
+  mGuiManager->getGui()->callJavascript("CosmoScout.removeApi", "stars");
 
   mGuiManager->getGui()->unregisterCallback("stars.setLuminanceBoost");
   mGuiManager->getGui()->unregisterCallback("stars.setSize");
