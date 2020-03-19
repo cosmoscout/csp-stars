@@ -138,9 +138,9 @@ class Stars : public IVistaOpenGLDraw {
   void buildStarVAO();
   void buildBackgroundVAO();
 
-  std::shared_ptr<VistaTexture> mStarTexture;
-  std::shared_ptr<VistaTexture> mBackgroundTexture1;
-  std::shared_ptr<VistaTexture> mBackgroundTexture2;
+  std::unique_ptr<VistaTexture> mStarTexture;
+  std::unique_ptr<VistaTexture> mBackgroundTexture1;
+  std::unique_ptr<VistaTexture> mBackgroundTexture2;
 
   VistaGLSLShader        mStarShader;
   VistaGLSLShader        mBackgroundShader;
