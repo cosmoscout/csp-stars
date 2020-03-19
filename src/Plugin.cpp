@@ -118,8 +118,7 @@ void Plugin::init() {
       mStarsTransform.get(), static_cast<int>(cs::utils::DrawOrder::eStars));
 
   // Toggle the stars node when the public property is changed.
-  mProperties->mEnabled.onChange().connect(
-      [this](bool val) { this->mStarsNode->SetIsEnabled(val); });
+  mProperties->mEnabled.connect([this](bool val) { this->mStarsNode->SetIsEnabled(val); });
 
   // Add the stars user interface components to the CosmoScout user interface.
   mGuiManager->addSettingsSectionToSideBarFromHTML(
@@ -181,10 +180,8 @@ void Plugin::init() {
       "Enables sprite draw mode for the stars.",
       std::function([this]() { mStars->setDrawMode(Stars::eSprite); }));
 
-  mEnableHDRConnection = mGraphicsEngine->pEnableHDR.onChange().connect(
+  mEnableHDRConnection = mGraphicsEngine->pEnableHDR.connectAndTouch(
       [this](bool value) { mStars->setEnableHDR(value); });
-
-  mGraphicsEngine->pEnableHDR.touchFor(mEnableHDRConnection);
 
   spdlog::info("Loading done.");
 }
@@ -197,7 +194,7 @@ void Plugin::deInit() {
   mSolarSystem->unregisterAnchor(mStarsTransform);
   mSceneGraph->GetRoot()->DisconnectChild(mStarsTransform.get());
 
-  mGraphicsEngine->pEnableHDR.onChange().disconnect(mEnableHDRConnection);
+  mGraphicsEngine->pEnableHDR.disconnect(mEnableHDRConnection);
 
   mGuiManager->removeSettingsSection("Stars");
 
