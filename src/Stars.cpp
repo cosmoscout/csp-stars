@@ -233,22 +233,22 @@ bool Stars::Do() {
       defines += "#define DRAWMODE_SPRITE\n";
     }
 
-    mStarShader.reset(new VistaGLSLShader());
+    mStarShader = VistaGLSLShader();
     if (mDrawMode == DrawMode::ePoint || mDrawMode == DrawMode::eSmoothPoint) {
-      mStarShader->InitVertexShaderFromString(defines + cStarsSnippets + cStarsVertOnePixel);
-      mStarShader->InitFragmentShaderFromString(defines + cStarsSnippets + cStarsFragOnePixel);
+      mStarShader.InitVertexShaderFromString(defines + cStarsSnippets + cStarsVertOnePixel);
+      mStarShader.InitFragmentShaderFromString(defines + cStarsSnippets + cStarsFragOnePixel);
     } else {
-      mStarShader->InitVertexShaderFromString(defines + cStarsSnippets + cStarsVert);
-      mStarShader->InitGeometryShaderFromString(defines + cStarsSnippets + cStarsGeom);
-      mStarShader->InitFragmentShaderFromString(defines + cStarsSnippets + cStarsFrag);
+      mStarShader.InitVertexShaderFromString(defines + cStarsSnippets + cStarsVert);
+      mStarShader.InitGeometryShaderFromString(defines + cStarsSnippets + cStarsGeom);
+      mStarShader.InitFragmentShaderFromString(defines + cStarsSnippets + cStarsFrag);
     }
 
-    mStarShader->Link();
+    mStarShader.Link();
 
-    mBackgroundShader.reset(new VistaGLSLShader());
-    mBackgroundShader->InitVertexShaderFromString(defines + cBackgroundVert);
-    mBackgroundShader->InitFragmentShaderFromString(defines + cBackgroundFrag);
-    mBackgroundShader->Link();
+    mBackgroundShader = VistaGLSLShader();
+    mBackgroundShader.InitVertexShaderFromString(defines + cBackgroundVert);
+    mBackgroundShader.InitFragmentShaderFromString(defines + cBackgroundFrag);
+    mBackgroundShader.Link();
 
     mShaderDirty = false;
   }
@@ -256,9 +256,9 @@ bool Stars::Do() {
   // draw background
   if ((mBackgroundTexture1 && mBackgroundColor1[3] != 0.f) ||
       (mBackgroundTexture2 && mBackgroundColor2[3] != 0.f)) {
-    mBackgroundVAO->Bind();
-    mBackgroundShader->Bind();
-    mBackgroundShader->SetUniform(mBackgroundShader->GetUniformLocation("iTexture"), 0);
+    mBackgroundVAO.Bind();
+    mBackgroundShader.Bind();
+    mBackgroundShader.SetUniform(mBackgroundShader.GetUniformLocation("iTexture"), 0);
 
     float backgroundIntensity = 1.0;
 
@@ -277,14 +277,14 @@ bool Stars::Do() {
     VistaTransformMatrix matInverseMVP(matMVP.GetInverted());
     VistaTransformMatrix matInverseMV(matMVNoTranslation.GetInverted());
 
-    GLint loc = mBackgroundShader->GetUniformLocation("uInvMVP");
+    GLint loc = mBackgroundShader.GetUniformLocation("uInvMVP");
     glUniformMatrix4fv(loc, 1, GL_FALSE, matInverseMVP.GetData());
 
-    loc = mBackgroundShader->GetUniformLocation("uInvMV");
+    loc = mBackgroundShader.GetUniformLocation("uInvMV");
     glUniformMatrix4fv(loc, 1, GL_FALSE, matInverseMV.GetData());
 
     if (mBackgroundTexture1 && mBackgroundColor1[3] != 0.f) {
-      mBackgroundShader->SetUniform(mBackgroundShader->GetUniformLocation("cColor"),
+      mBackgroundShader.SetUniform(mBackgroundShader.GetUniformLocation("cColor"),
           mBackgroundColor1[0], mBackgroundColor1[1], mBackgroundColor1[2],
           mBackgroundColor1[3] * backgroundIntensity);
       mBackgroundTexture1->Bind(GL_TEXTURE0);
@@ -293,7 +293,7 @@ bool Stars::Do() {
     }
 
     if (mBackgroundTexture2 && mBackgroundColor2[3] != 0.f) {
-      mBackgroundShader->SetUniform(mBackgroundShader->GetUniformLocation("cColor"),
+      mBackgroundShader.SetUniform(mBackgroundShader.GetUniformLocation("cColor"),
           mBackgroundColor2[0], mBackgroundColor2[1], mBackgroundColor2[2],
           mBackgroundColor2[3] * backgroundIntensity);
       mBackgroundTexture2->Bind(GL_TEXTURE0);
@@ -301,13 +301,13 @@ bool Stars::Do() {
       mBackgroundTexture2->Unbind(GL_TEXTURE0);
     }
 
-    mBackgroundShader->Release();
-    mBackgroundVAO->Release();
+    mBackgroundShader.Release();
+    mBackgroundVAO.Release();
   }
 
   // draw stars
-  mStarVAO->Bind();
-  mStarShader->Bind();
+  mStarVAO.Bind();
+  mStarShader.Bind();
 
   if (mDrawMode == DrawMode::ePoint || mDrawMode == DrawMode::eSmoothPoint) {
     glPointSize(0.5f);
@@ -324,37 +324,37 @@ bool Stars::Do() {
   int viewport[4];
   glGetIntegerv(GL_VIEWPORT, viewport);
 
-  mStarShader->SetUniform(mStarShader->GetUniformLocation("uResolution"), viewport[2], viewport[3]);
+  mStarShader.SetUniform(mStarShader.GetUniformLocation("uResolution"), viewport[2], viewport[3]);
 
   mStarTexture->Bind(GL_TEXTURE0);
-  mStarShader->SetUniform(mStarShader->GetUniformLocation("uStarTexture"), 0);
-  mStarShader->SetUniform(mStarShader->GetUniformLocation("uMinMagnitude"), mMinMagnitude);
-  mStarShader->SetUniform(mStarShader->GetUniformLocation("uMaxMagnitude"), mMaxMagnitude);
-  mStarShader->SetUniform(mStarShader->GetUniformLocation("uSolidAngle"), mSolidAngle);
-  mStarShader->SetUniform(
-      mStarShader->GetUniformLocation("uLuminanceMultiplicator"), mLuminanceMultiplicator);
+  mStarShader.SetUniform(mStarShader.GetUniformLocation("uStarTexture"), 0);
+  mStarShader.SetUniform(mStarShader.GetUniformLocation("uMinMagnitude"), mMinMagnitude);
+  mStarShader.SetUniform(mStarShader.GetUniformLocation("uMaxMagnitude"), mMaxMagnitude);
+  mStarShader.SetUniform(mStarShader.GetUniformLocation("uSolidAngle"), mSolidAngle);
+  mStarShader.SetUniform(
+      mStarShader.GetUniformLocation("uLuminanceMultiplicator"), mLuminanceMultiplicator);
 
   VistaTransformMatrix matInverseMV(matModelView.GetInverted());
   VistaTransformMatrix matInverseP(matProjection.GetInverted());
 
-  GLint loc = mStarShader->GetUniformLocation("uMatMV");
+  GLint loc = mStarShader.GetUniformLocation("uMatMV");
   glUniformMatrix4fv(loc, 1, GL_FALSE, matModelView.GetData());
 
-  loc = mStarShader->GetUniformLocation("uMatP");
+  loc = mStarShader.GetUniformLocation("uMatP");
   glUniformMatrix4fv(loc, 1, GL_FALSE, matProjection.GetData());
 
-  loc = mStarShader->GetUniformLocation("uInvMV");
+  loc = mStarShader.GetUniformLocation("uInvMV");
   glUniformMatrix4fv(loc, 1, GL_FALSE, matInverseMV.GetData());
 
-  loc = mStarShader->GetUniformLocation("uInvP");
+  loc = mStarShader.GetUniformLocation("uInvP");
   glUniformMatrix4fv(loc, 1, GL_FALSE, matInverseP.GetData());
 
   glDrawArrays(GL_POINTS, 0, (GLsizei)mStars.size());
 
   mStarTexture->Unbind(GL_TEXTURE0);
 
-  mStarShader->Release();
-  mStarVAO->Release();
+  mStarShader.Release();
+  mStarVAO.Release();
 
   glDepthMask(GL_TRUE);
   glPopAttrib();
@@ -462,12 +462,6 @@ void Stars::init(const std::string& sStarTextureFile, const std::string& sCacheF
   setStarTexture(sStarTextureFile);
 
   // create buffers ----------------------------------------------------------
-  mStarVBO.reset(new VistaBufferObject());
-  mStarVAO.reset(new VistaVertexArrayObject());
-
-  mBackgroundVBO.reset(new VistaBufferObject());
-  mBackgroundVAO.reset(new VistaVertexArrayObject());
-
   buildStarVAO();
   buildBackgroundVAO();
 }
@@ -714,29 +708,29 @@ void Stars::buildStarVAO() {
     data[c + 6] = it->mVMagnitude - 5.f * std::log10(fDist / 10.f);
   }
 
-  mStarVBO->Bind(GL_ARRAY_BUFFER);
-  mStarVBO->BufferData(iElementCount * mStars.size() * sizeof(float), data.data(), GL_STATIC_DRAW);
-  mStarVBO->Release();
+  mStarVBO.Bind(GL_ARRAY_BUFFER);
+  mStarVBO.BufferData(iElementCount * mStars.size() * sizeof(float), data.data(), GL_STATIC_DRAW);
+  mStarVBO.Release();
 
   // star positions
-  mStarVAO->EnableAttributeArray(0);
-  mStarVAO->SpecifyAttributeArrayFloat(
-      0, 2, GL_FLOAT, GL_FALSE, iElementCount * sizeof(float), 0, mStarVBO.get());
+  mStarVAO.EnableAttributeArray(0);
+  mStarVAO.SpecifyAttributeArrayFloat(
+      0, 2, GL_FLOAT, GL_FALSE, iElementCount * sizeof(float), 0, &mStarVBO);
 
   // star distances
-  mStarVAO->EnableAttributeArray(1);
-  mStarVAO->SpecifyAttributeArrayFloat(
-      1, 1, GL_FLOAT, GL_FALSE, iElementCount * sizeof(float), 2 * sizeof(float), mStarVBO.get());
+  mStarVAO.EnableAttributeArray(1);
+  mStarVAO.SpecifyAttributeArrayFloat(
+      1, 1, GL_FLOAT, GL_FALSE, iElementCount * sizeof(float), 2 * sizeof(float), &mStarVBO);
 
   // color
-  mStarVAO->EnableAttributeArray(2);
-  mStarVAO->SpecifyAttributeArrayFloat(
-      2, 3, GL_FLOAT, GL_FALSE, iElementCount * sizeof(float), 3 * sizeof(float), mStarVBO.get());
+  mStarVAO.EnableAttributeArray(2);
+  mStarVAO.SpecifyAttributeArrayFloat(
+      2, 3, GL_FLOAT, GL_FALSE, iElementCount * sizeof(float), 3 * sizeof(float), &mStarVBO);
 
   // magnitude
-  mStarVAO->EnableAttributeArray(3);
-  mStarVAO->SpecifyAttributeArrayFloat(
-      3, 1, GL_FLOAT, GL_FALSE, iElementCount * sizeof(float), 6 * sizeof(float), mStarVBO.get());
+  mStarVAO.EnableAttributeArray(3);
+  mStarVAO.SpecifyAttributeArrayFloat(
+      3, 1, GL_FLOAT, GL_FALSE, iElementCount * sizeof(float), 6 * sizeof(float), &mStarVBO);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -752,14 +746,14 @@ void Stars::buildBackgroundVAO() {
   data[6] = 1;
   data[7] = -1;
 
-  mBackgroundVBO->Bind(GL_ARRAY_BUFFER);
-  mBackgroundVBO->BufferData(data.size() * sizeof(float), &(data[0]), GL_STATIC_DRAW);
-  mBackgroundVBO->Release();
+  mBackgroundVBO.Bind(GL_ARRAY_BUFFER);
+  mBackgroundVBO.BufferData(data.size() * sizeof(float), &(data[0]), GL_STATIC_DRAW);
+  mBackgroundVBO.Release();
 
   // positions
-  mBackgroundVAO->EnableAttributeArray(0);
-  mBackgroundVAO->SpecifyAttributeArrayFloat(
-      0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0, mBackgroundVBO.get());
+  mBackgroundVAO.EnableAttributeArray(0);
+  mBackgroundVAO.SpecifyAttributeArrayFloat(
+      0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0, &mBackgroundVBO);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

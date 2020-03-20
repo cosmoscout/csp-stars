@@ -48,9 +48,9 @@ class Plugin : public cs::core::PluginBase {
 
  private:
   Settings                                        mPluginSettings;
-  std::shared_ptr<Stars>                          mStars;
+  std::unique_ptr<Stars>                          mStars;
   std::shared_ptr<cs::scene::CelestialAnchorNode> mStarsTransform;
-  VistaOpenGLNode*                                mStarsNode;
+  std::unique_ptr<VistaOpenGLNode>                mStarsNode;
   std::shared_ptr<Properties>                     mProperties;
 
   int mEnableHDRConnection = -1;
