@@ -93,7 +93,7 @@ void Plugin::init() {
   }
 
   // Create the Stars object based on the settings.
-  mStars = std::make_shared<Stars>(catalogs, mPluginSettings.mStarTexture, cacheFile);
+  mStars = std::make_unique<Stars>(catalogs, mPluginSettings.mStarTexture, cacheFile);
 
   // Configure the stars based on some additional settings.
   auto& bg1 = mPluginSettings.mBackgroundColor1;
@@ -112,14 +112,13 @@ void Plugin::init() {
 
   mSceneGraph->GetRoot()->AddChild(mStarsTransform.get());
 
-  mStarsNode = mSceneGraph->NewOpenGLNode(mStarsTransform.get(), mStars.get());
+  mStarsNode.reset(mSceneGraph->NewOpenGLNode(mStarsTransform.get(), mStars.get()));
 
   VistaOpenSGMaterialTools::SetSortKeyOnSubtree(
       mStarsTransform.get(), static_cast<int>(cs::utils::DrawOrder::eStars));
 
   // Toggle the stars node when the public property is changed.
-  mProperties->mEnabled.onChange().connect(
-      [this](bool val) { this->mStarsNode->SetIsEnabled(val); });
+  mProperties->mEnabled.connect([this](bool val) { this->mStarsNode->SetIsEnabled(val); });
 
   // Add the stars user interface components to the CosmoScout user interface.
   mGuiManager->addSettingsSectionToSideBarFromHTML(
@@ -181,7 +180,7 @@ void Plugin::init() {
       "Enables sprite draw mode for the stars.",
       std::function([this]() { mStars->setDrawMode(Stars::eSprite); }));
 
-  mEnableHDRConnection = mGraphicsEngine->pEnableHDR.onChange().connect(
+  mEnableHDRConnection = mGraphicsEngine->pEnableHDR.connectAndTouch(
       [this](bool value) { mStars->setEnableHDR(value); });
 
   spdlog::info("Loading done.");
@@ -195,7 +194,11 @@ void Plugin::deInit() {
   mSolarSystem->unregisterAnchor(mStarsTransform);
   mSceneGraph->GetRoot()->DisconnectChild(mStarsTransform.get());
 
-  mGraphicsEngine->pEnableHDR.onChange().disconnect(mEnableHDRConnection);
+  mGraphicsEngine->pEnableHDR.disconnect(mEnableHDRConnection);
+
+  mGuiManager->removeSettingsSection("Stars");
+
+  mGuiManager->getGui()->callJavascript("CosmoScout.removeApi", "stars");
 
   mGuiManager->getGui()->unregisterCallback("stars.setLuminanceBoost");
   mGuiManager->getGui()->unregisterCallback("stars.setSize");

@@ -138,18 +138,18 @@ class Stars : public IVistaOpenGLDraw {
   void buildStarVAO();
   void buildBackgroundVAO();
 
-  std::shared_ptr<VistaTexture>    mStarTexture;
-  std::unique_ptr<VistaGLSLShader> mStarShader;
-  std::unique_ptr<VistaGLSLShader> mBackgroundShader;
-  std::shared_ptr<VistaTexture>    mBackgroundTexture1;
-  std::shared_ptr<VistaTexture>    mBackgroundTexture2;
-  VistaColor                       mBackgroundColor1;
-  VistaColor                       mBackgroundColor2;
+  std::unique_ptr<VistaTexture> mStarTexture;
+  std::unique_ptr<VistaTexture> mBackgroundTexture1;
+  std::unique_ptr<VistaTexture> mBackgroundTexture2;
 
-  std::unique_ptr<VistaVertexArrayObject> mStarVAO       = nullptr;
-  std::unique_ptr<VistaBufferObject>      mStarVBO       = nullptr;
-  std::unique_ptr<VistaVertexArrayObject> mBackgroundVAO = nullptr;
-  std::unique_ptr<VistaBufferObject>      mBackgroundVBO = nullptr;
+  VistaGLSLShader        mStarShader;
+  VistaGLSLShader        mBackgroundShader;
+  VistaColor             mBackgroundColor1;
+  VistaColor             mBackgroundColor2;
+  VistaVertexArrayObject mStarVAO;
+  VistaBufferObject      mStarVBO;
+  VistaVertexArrayObject mBackgroundVAO;
+  VistaBufferObject      mBackgroundVBO;
 
   std::vector<Star>                  mStars;
   std::vector<VistaColor>            mSpectralColors;
