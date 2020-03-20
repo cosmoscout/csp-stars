@@ -32,27 +32,28 @@ namespace csp::stars {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void from_json(const nlohmann::json& j, Plugin::Settings& o) {
-  cs::core::parseSection("csp-stars", [&] {
-    o.mBackgroundTexture1 = cs::core::parseProperty<std::string>("backgroundTexture1", j);
-    o.mBackgroundTexture2 = cs::core::parseProperty<std::string>("backgroundTexture2", j);
+void from_json(nlohmann::json const& j, Plugin::Settings& o) {
+  cs::core::Settings::deserialize(j, "backgroundTexture1", o.mBackgroundTexture1);
+  cs::core::Settings::deserialize(j, "backgroundTexture2", o.mBackgroundTexture2);
+  cs::core::Settings::deserialize(j, "backgroundColor1", o.mBackgroundColor1);
+  cs::core::Settings::deserialize(j, "backgroundColor2", o.mBackgroundColor2);
+  cs::core::Settings::deserialize(j, "starTexture", o.mStarTexture);
+  cs::core::Settings::deserialize(j, "cacheFile", o.mCacheFile);
+  cs::core::Settings::deserialize(j, "hipparcosCatalog", o.mHipparcosCatalog);
+  cs::core::Settings::deserialize(j, "tychoCatalog", o.mTychoCatalog);
+  cs::core::Settings::deserialize(j, "tycho2Catalog", o.mTycho2Catalog);
+}
 
-    auto b1 = j.at("backgroundColor1");
-    for (int i = 0; i < 4; ++i) {
-      o.mBackgroundColor1[i] = b1.at(i);
-    }
-
-    auto b2 = j.at("backgroundColor2");
-    for (int i = 0; i < 4; ++i) {
-      o.mBackgroundColor2[i] = b2.at(i);
-    }
-
-    o.mStarTexture      = cs::core::parseProperty<std::string>("starTexture", j);
-    o.mCacheFile        = cs::core::parseOptional<std::string>("cacheFile", j);
-    o.mHipparcosCatalog = cs::core::parseOptional<std::string>("hipparcosCatalog", j);
-    o.mTychoCatalog     = cs::core::parseOptional<std::string>("tychoCatalog", j);
-    o.mTycho2Catalog    = cs::core::parseOptional<std::string>("tycho2Catalog", j);
-  });
+void to_json(nlohmann::json& j, Plugin::Settings const& o) {
+  cs::core::Settings::serialize(j, "backgroundTexture1", o.mBackgroundTexture1);
+  cs::core::Settings::serialize(j, "backgroundTexture2", o.mBackgroundTexture2);
+  cs::core::Settings::serialize(j, "backgroundColor1", o.mBackgroundColor1);
+  cs::core::Settings::serialize(j, "backgroundColor2", o.mBackgroundColor2);
+  cs::core::Settings::serialize(j, "starTexture", o.mStarTexture);
+  cs::core::Settings::serialize(j, "cacheFile", o.mCacheFile);
+  cs::core::Settings::serialize(j, "hipparcosCatalog", o.mHipparcosCatalog);
+  cs::core::Settings::serialize(j, "tychoCatalog", o.mTychoCatalog);
+  cs::core::Settings::serialize(j, "tycho2Catalog", o.mTycho2Catalog);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
