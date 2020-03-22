@@ -181,7 +181,7 @@ void Plugin::init() {
       "Enables sprite draw mode for the stars.",
       std::function([this]() { mStars->setDrawMode(Stars::eSprite); }));
 
-  mEnableHDRConnection = mGraphicsEngine->pEnableHDR.connectAndTouch(
+  mEnableHDRConnection = mAllSettings->mGraphics.pEnableHDR.connectAndTouch(
       [this](bool value) { mStars->setEnableHDR(value); });
 
   spdlog::info("Loading done.");
@@ -195,7 +195,7 @@ void Plugin::deInit() {
   mSolarSystem->unregisterAnchor(mStarsTransform);
   mSceneGraph->GetRoot()->DisconnectChild(mStarsTransform.get());
 
-  mGraphicsEngine->pEnableHDR.disconnect(mEnableHDRConnection);
+  mAllSettings->mGraphics.pEnableHDR.disconnect(mEnableHDRConnection);
 
   mGuiManager->removeSettingsSection("Stars");
 
@@ -225,7 +225,7 @@ void Plugin::update() {
   // the star's brightness.
   float fIntensity = mGraphicsEngine->pApproximateSceneBrightness.get();
 
-  if (mGraphicsEngine->pEnableHDR.get()) {
+  if (mAllSettings->mGraphics.pEnableHDR.get()) {
     fIntensity = 1.f;
   }
 
