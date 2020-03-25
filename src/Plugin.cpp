@@ -146,8 +146,9 @@ void Plugin::init() {
       }));
 
   mGuiManager->getGui()->registerCallback("stars.setSize",
-      "Sets the apparent size of stars on screen.",
-      std::function([this](double value) { mStars->setSolidAngle(value * 0.0001); }));
+      "Sets the apparent size of stars on screen.", std::function([this](double value) {
+        mStars->setSolidAngle(static_cast<float>(value * 0.0001));
+      }));
 
   mGuiManager->getGui()->registerCallback("stars.setMagnitude",
       "Sets the maximum or minimum magnitude for stars. The first value is the magnitude, the "
@@ -155,9 +156,9 @@ void Plugin::init() {
       "magnitude.",
       std::function([this](double val, double handle) {
         if (handle == 0.0)
-          mStars->setMinMagnitude(val);
+          mStars->setMinMagnitude(static_cast<float>(val));
         else
-          mStars->setMaxMagnitude(val);
+          mStars->setMaxMagnitude(static_cast<float>(val));
       }));
 
   mGuiManager->getGui()->registerCallback("stars.setDrawMode0",
@@ -228,7 +229,8 @@ void Plugin::update() {
     fIntensity = 1.f;
   }
 
-  mStars->setLuminanceMultiplicator(fIntensity * mProperties->mLuminanceMultiplicator.get());
+  mStars->setLuminanceMultiplicator(
+      static_cast<float>(fIntensity * (mProperties->mLuminanceMultiplicator.get())));
   mStars->setBackgroundColor1(VistaColor(
       0.5f, 0.8f, 1.f, 0.3f * fIntensity * (mProperties->mEnableCelestialGrid.get() ? 1.f : 0.f)));
   mStars->setBackgroundColor2(VistaColor(
