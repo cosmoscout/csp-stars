@@ -56,7 +56,7 @@ class Stars : public IVistaOpenGLDraw {
   /// different catalogs!
   /// @param sStarTextureFile     An uncompressed TGA grayscale image used for the stars.
   /// @param sCacheFile           Location for the star cache.
-  Stars(const std::map<CatalogType, std::string>& catalogs, const std::string& starTexture,
+  Stars(std::map<CatalogType, std::string> catalogs, const std::string& starTexture,
       const std::string& cacheFile = "star_cache.dat");
 
   /// Specifies how the stars should be drawn.
@@ -110,7 +110,7 @@ class Stars : public IVistaOpenGLDraw {
   bool Do() override;
 
   /// This method should return the bounding box of the openGL object you draw in the method Do().
-  bool GetBoundingBox(VistaBoundingBox& bb) override;
+  bool GetBoundingBox(VistaBoundingBox& oBoundingBox) override;
 
  private:
   /// Data structure of one record from star catalog.

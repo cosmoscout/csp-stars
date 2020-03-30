@@ -31,6 +31,7 @@
 #include <spdlog/spdlog.h>
 
 #include <fstream>
+#include <utility>
 
 namespace csp::stars {
 
@@ -68,9 +69,9 @@ const int Stars::cCacheVersion = 3;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Stars::Stars(const std::map<CatalogType, std::string>& catalogs, const std::string& starTexture,
+Stars::Stars(std::map<CatalogType, std::string> catalogs, const std::string& starTexture,
     const std::string& cacheFile)
-    : mCatalogs(catalogs) {
+    : mCatalogs(std::move(catalogs)) {
   init(starTexture, cacheFile);
 }
 
@@ -522,7 +523,7 @@ bool Stars::readStarsFromCatalog(CatalogType type, const std::string& filename) 
         // store star data
         bool successStoreData(true);
 
-        Star star;
+        Star star{};
         successStoreData &=
             fromString<float>(items[cColumnMapping[cs::utils::enumCast(type)]
                                                   [cs::utils::enumCast(CatalogColumn::eVmag)]],
@@ -579,9 +580,8 @@ bool Stars::readStarsFromCatalog(CatalogType type, const std::string& filename) 
 
 void Stars::writeStarCache(const std::string& sCacheFile) const {
   VistaType::uint32 catalogs = 0;
-  for (std::map<CatalogType, std::string>::const_iterator it(mCatalogs.begin());
-       it != mCatalogs.end(); ++it) {
-    catalogs += (uint32_t)std::pow(2, (int)it->first);
+  for (const auto& mCatalog : mCatalogs) {
+    catalogs += (uint32_t)std::pow(2, (int)mCatalog.first);
   }
 
   VistaByteBufferSerializer serializer;
@@ -590,13 +590,13 @@ void Stars::writeStarCache(const std::string& sCacheFile) const {
   serializer.WriteInt32(
       (VistaType::uint32)mStars.size()); // write number of stars to front of byte stream
 
-  for (std::vector<Star>::const_iterator it = mStars.begin(); it != mStars.end(); ++it) {
+  for (const auto& mStar : mStars) {
     // serialize star data into byte stream
-    serializer.WriteFloat32(it->mVMagnitude);
-    serializer.WriteFloat32(it->mBMagnitude);
-    serializer.WriteFloat32(it->mAscension);
-    serializer.WriteFloat32(it->mDeclination);
-    serializer.WriteFloat32(it->mParallax);
+    serializer.WriteFloat32(mStar.mVMagnitude);
+    serializer.WriteFloat32(mStar.mBMagnitude);
+    serializer.WriteFloat32(mStar.mAscension);
+    serializer.WriteFloat32(mStar.mDeclination);
+    serializer.WriteFloat32(mStar.mParallax);
   }
 
   // open file
@@ -647,9 +647,8 @@ bool Stars::readStarCache(const std::string& sCacheFile) {
     }
 
     VistaType::uint32 catalogsToLoad = 0;
-    for (std::map<CatalogType, std::string>::const_iterator it(mCatalogs.begin());
-         it != mCatalogs.end(); ++it) {
-      catalogsToLoad += (uint32_t)std::pow(2, (int)it->first);
+    for (const auto& mCatalog : mCatalogs) {
+      catalogsToLoad += (uint32_t)std::pow(2, (int)mCatalog.first);
     }
 
     if (catalogs != catalogsToLoad) {
@@ -657,7 +656,7 @@ bool Stars::readStarCache(const std::string& sCacheFile) {
     }
 
     for (unsigned int num = 0; num < numStars; ++num) {
-      Star star;
+      Star star{};
       deserializer.ReadFloat32(star.mVMagnitude);
       deserializer.ReadFloat32(star.mBMagnitude);
       deserializer.ReadFloat32(star.mAscension);
