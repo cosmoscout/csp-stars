@@ -54,11 +54,10 @@ bool fromString(std::string const& v, T& out) {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-const int Stars::cColumnMapping[cs::utils::enumCast(CatalogType::eCount)]
-                               [cs::utils::enumCast(CatalogColumn::eCount)] = {
-                                   {34, 32, 11, 8, 9, 31}, // CatalogType::eHipparcos
-                                   {34, 32, 11, 8, 9, 31}, // CatalogType::eTycho
-                                   {19, 17, -1, 2, 3, 23}  // CatalogType::eTycho2
+const std::array<std::array<int, Stars::NUM_COLUMNS>, Stars::NUM_CATALOGS> Stars::cColumnMapping{
+    std::array{34, 32, 11, 8, 9, 31}, // CatalogType::eHipparcos
+    std::array{34, 32, 11, 8, 9, 31}, // CatalogType::eTycho
+    std::array{19, 17, -1, 2, 3, 23}  // CatalogType::eTycho2
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -212,12 +211,12 @@ bool Stars::Do() {
   glBlendFunc(GL_ONE, GL_ONE);
 
   // get matrices
-  GLfloat glMat[16];
-  glGetFloatv(GL_MODELVIEW_MATRIX, &glMat[0]);
-  VistaTransformMatrix matModelView(glMat, true);
+  std::array<GLfloat, 16> glMat{};
+  glGetFloatv(GL_MODELVIEW_MATRIX, glMat.data());
+  VistaTransformMatrix matModelView(glMat.data(), true);
 
-  glGetFloatv(GL_PROJECTION_MATRIX, &glMat[0]);
-  VistaTransformMatrix matProjection(glMat, true);
+  glGetFloatv(GL_PROJECTION_MATRIX, glMat.data());
+  VistaTransformMatrix matProjection(glMat.data(), true);
 
   if (mShaderDirty) {
     std::string defines = "#version 330\n";
@@ -259,24 +258,24 @@ bool Stars::Do() {
   }
 
   // draw background
-  if ((mBackgroundTexture1 && mBackgroundColor1[3] != 0.f) ||
-      (mBackgroundTexture2 && mBackgroundColor2[3] != 0.f)) {
+  if ((mBackgroundTexture1 && mBackgroundColor1[3] != 0.F) ||
+      (mBackgroundTexture2 && mBackgroundColor2[3] != 0.F)) {
     mBackgroundVAO.Bind();
     mBackgroundShader.Bind();
     mBackgroundShader.SetUniform(mBackgroundShader.GetUniformLocation("iTexture"), 0);
 
-    float backgroundIntensity = 1.0f;
+    float backgroundIntensity = 1.0F;
 
     if (mEnableHDR) {
-      backgroundIntensity = 0.001f * mLuminanceMultiplicator;
+      backgroundIntensity = 0.001F * mLuminanceMultiplicator;
     }
 
     VistaTransformMatrix matMVNoTranslation = matModelView;
 
     // reduce jitter
-    matMVNoTranslation[0][3] = 0.f;
-    matMVNoTranslation[1][3] = 0.f;
-    matMVNoTranslation[2][3] = 0.f;
+    matMVNoTranslation[0][3] = 0.F;
+    matMVNoTranslation[1][3] = 0.F;
+    matMVNoTranslation[2][3] = 0.F;
 
     VistaTransformMatrix matMVP(matProjection * matMVNoTranslation);
     VistaTransformMatrix matInverseMVP(matMVP.GetInverted());
@@ -288,7 +287,7 @@ bool Stars::Do() {
     loc = mBackgroundShader.GetUniformLocation("uInvMV");
     glUniformMatrix4fv(loc, 1, GL_FALSE, matInverseMV.GetData());
 
-    if (mBackgroundTexture1 && mBackgroundColor1[3] != 0.f) {
+    if (mBackgroundTexture1 && mBackgroundColor1[3] != 0.F) {
       mBackgroundShader.SetUniform(mBackgroundShader.GetUniformLocation("cColor"),
           mBackgroundColor1[0], mBackgroundColor1[1], mBackgroundColor1[2],
           mBackgroundColor1[3] * backgroundIntensity);
@@ -297,7 +296,7 @@ bool Stars::Do() {
       mBackgroundTexture1->Unbind(GL_TEXTURE0);
     }
 
-    if (mBackgroundTexture2 && mBackgroundColor2[3] != 0.f) {
+    if (mBackgroundTexture2 && mBackgroundColor2[3] != 0.F) {
       mBackgroundShader.SetUniform(mBackgroundShader.GetUniformLocation("cColor"),
           mBackgroundColor2[0], mBackgroundColor2[1], mBackgroundColor2[2],
           mBackgroundColor2[3] * backgroundIntensity);
@@ -315,7 +314,7 @@ bool Stars::Do() {
   mStarShader.Bind();
 
   if (mDrawMode == DrawMode::ePoint || mDrawMode == DrawMode::eSmoothPoint) {
-    glPointSize(0.5f);
+    glPointSize(0.5F);
   }
 
   if (mDrawMode == DrawMode::eSmoothPoint) {
@@ -326,11 +325,11 @@ bool Stars::Do() {
     glDisable(GL_POINT_SMOOTH);
   }
 
-  int viewport[4];
-  glGetIntegerv(GL_VIEWPORT, viewport);
+  std::array<int, 4> viewport{};
+  glGetIntegerv(GL_VIEWPORT, viewport.data());
 
   mStarShader.SetUniform(mStarShader.GetUniformLocation("uResolution"),
-      static_cast<float>(viewport[2]), static_cast<float>(viewport[3]));
+      static_cast<float>(viewport.at(2)), static_cast<float>(viewport.at(3)));
 
   mStarTexture->Bind(GL_TEXTURE0);
   mStarShader.SetUniform(mStarShader.GetUniformLocation("uStarTexture"), 0);
@@ -355,7 +354,7 @@ bool Stars::Do() {
   loc = mStarShader.GetUniformLocation("uInvP");
   glUniformMatrix4fv(loc, 1, GL_FALSE, matInverseP.GetData());
 
-  glDrawArrays(GL_POINTS, 0, (GLsizei)mStars.size());
+  glDrawArrays(GL_POINTS, 0, static_cast<GLsizei>(mStars.size()));
 
   mStarTexture->Unbind(GL_TEXTURE0);
 
@@ -371,12 +370,12 @@ bool Stars::Do() {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool Stars::GetBoundingBox(VistaBoundingBox& oBoundingBox) {
-  float min(std::numeric_limits<float>::min());
-  float max(std::numeric_limits<float>::max());
-  float fMin[3] = {min, min, min};
-  float fMax[3] = {max, max, max};
+  float      min(std::numeric_limits<float>::min());
+  float      max(std::numeric_limits<float>::max());
+  std::array fMin{min, min, min};
+  std::array fMax{max, max, max};
 
-  oBoundingBox.SetBounds(fMin, fMax);
+  oBoundingBox.SetBounds(fMin.data(), fMax.data());
 
   return true;
 }
@@ -439,8 +438,9 @@ void Stars::init(const std::string& sStarTextureFile, const std::string& sCacheF
     std::map<CatalogType, std::string>::const_iterator it;
 
     it = mCatalogs.find(CatalogType::eHipparcos);
-    if (it != mCatalogs.end())
+    if (it != mCatalogs.end()) {
       readStarsFromCatalog(it->first, it->second);
+    }
 
     it = mCatalogs.find(CatalogType::eTycho);
     if (it != mCatalogs.end()) {
@@ -512,10 +512,10 @@ bool Stars::readStarsFromCatalog(CatalogType type, const std::string& filename) 
       // expecting Hipparcos or Tycho-1 catalog and more than 12 columns
       if (items.size() > 12) {
         // skip if part of hipparcos catalogue
-        int tmp;
+        int tmp{};
         if (type != CatalogType::eHipparcos && loadHipparcos &&
-            fromString<int>(items[cColumnMapping[cs::utils::enumCast(type)]
-                                                [cs::utils::enumCast(CatalogColumn::eHipp)]],
+            fromString<int>(items[cColumnMapping.at(cs::utils::enumCast(
+                                type))[cs::utils::enumCast(CatalogColumn::eHipp)]],
                 tmp)) {
           continue;
         }
@@ -524,27 +524,27 @@ bool Stars::readStarsFromCatalog(CatalogType type, const std::string& filename) 
         bool successStoreData(true);
 
         Star star{};
-        successStoreData &=
-            fromString<float>(items[cColumnMapping[cs::utils::enumCast(type)]
-                                                  [cs::utils::enumCast(CatalogColumn::eVmag)]],
-                star.mVMagnitude);
-        successStoreData &=
-            fromString<float>(items[cColumnMapping[cs::utils::enumCast(type)]
-                                                  [cs::utils::enumCast(CatalogColumn::eBmag)]],
-                star.mBMagnitude);
-        successStoreData &=
-            fromString<float>(items[cColumnMapping[cs::utils::enumCast(type)]
-                                                  [cs::utils::enumCast(CatalogColumn::eRect)]],
-                star.mAscension);
-        successStoreData &=
-            fromString<float>(items[cColumnMapping[cs::utils::enumCast(type)]
-                                                  [cs::utils::enumCast(CatalogColumn::eDecl)]],
-                star.mDeclination);
+        successStoreData &= fromString<float>(
+            items[cColumnMapping.at(
+                cs::utils::enumCast(type))[cs::utils::enumCast(CatalogColumn::eVmag)]],
+            star.mVMagnitude);
+        successStoreData &= fromString<float>(
+            items[cColumnMapping.at(
+                cs::utils::enumCast(type))[cs::utils::enumCast(CatalogColumn::eBmag)]],
+            star.mBMagnitude);
+        successStoreData &= fromString<float>(
+            items[cColumnMapping.at(
+                cs::utils::enumCast(type))[cs::utils::enumCast(CatalogColumn::eRect)]],
+            star.mAscension);
+        successStoreData &= fromString<float>(
+            items[cColumnMapping.at(
+                cs::utils::enumCast(type))[cs::utils::enumCast(CatalogColumn::eDecl)]],
+            star.mDeclination);
 
-        if (cColumnMapping[cs::utils::enumCast(type)][cs::utils::enumCast(CatalogColumn::ePara)] >
-            0) {
-          if (!fromString<float>(items[cColumnMapping[cs::utils::enumCast(type)]
-                                                     [cs::utils::enumCast(CatalogColumn::ePara)]],
+        if (cColumnMapping.at(
+                cs::utils::enumCast(type))[cs::utils::enumCast(CatalogColumn::ePara)] > 0) {
+          if (!fromString<float>(items[cColumnMapping.at(cs::utils::enumCast(
+                                     type))[cs::utils::enumCast(CatalogColumn::ePara)]],
                   star.mParallax)) {
             star.mParallax = 0;
           }
@@ -553,8 +553,8 @@ bool Stars::readStarsFromCatalog(CatalogType type, const std::string& filename) 
         }
 
         if (successStoreData) {
-          star.mAscension   = (360.f + 90.f - star.mAscension) / 180.f * Vista::Pi;
-          star.mDeclination = star.mDeclination / 180.f * Vista::Pi;
+          star.mAscension   = (360.F + 90.F - star.mAscension) / 180.F * Vista::Pi;
+          star.mDeclination = star.mDeclination / 180.F * Vista::Pi;
 
           mStars.emplace_back(star);
         }
@@ -581,14 +581,15 @@ bool Stars::readStarsFromCatalog(CatalogType type, const std::string& filename) 
 void Stars::writeStarCache(const std::string& sCacheFile) const {
   VistaType::uint32 catalogs = 0;
   for (const auto& mCatalog : mCatalogs) {
-    catalogs += (uint32_t)std::pow(2, (int)mCatalog.first);
+    catalogs += static_cast<uint32_t>(std::pow(2, static_cast<int>(mCatalog.first)));
   }
 
   VistaByteBufferSerializer serializer;
-  serializer.WriteInt32((VistaType::uint32)cCacheVersion); // cache format version number
-  serializer.WriteInt32((VistaType::uint32)catalogs);      // cache format version number
   serializer.WriteInt32(
-      (VistaType::uint32)mStars.size()); // write number of stars to front of byte stream
+      static_cast<VistaType::uint32>(cCacheVersion)); // cache format version number
+  serializer.WriteInt32(catalogs);                    // cache format version number
+  serializer.WriteInt32(static_cast<VistaType::uint32>(
+      mStars.size())); // write number of stars to front of byte stream
 
   for (const auto& mStar : mStars) {
     // serialize star data into byte stream
@@ -606,7 +607,7 @@ void Stars::writeStarCache(const std::string& sCacheFile) const {
     // write serialized star data
     spdlog::info("Writing {} stars ({} bytes) into '{}'.", mStars.size(),
         serializer.GetBufferSize(), sCacheFile);
-    file.write((const char*)serializer.GetBuffer(), serializer.GetBufferSize());
+    file.write(reinterpret_cast<const char*>(serializer.GetBuffer()), serializer.GetBufferSize());
     file.close();
   } else {
     spdlog::error(
@@ -625,10 +626,10 @@ bool Stars::readStarCache(const std::string& sCacheFile) {
       std::ios::in | std::ios::binary | std::ios::ate); // ate = set read pointer to end
   if (file.is_open()) {
     // read binary data from file
-    int                          size = (int)file.tellg(); // get position of read pointer
+    int size = static_cast<int>(file.tellg()); // get position of read pointer
     std::vector<VistaType::byte> data(size);
-    file.seekg(0, std::ios::beg);       // set read pointer to the beginning of file stream
-    file.read((char*)(&data[0]), size); // read file stream into char array 'data'
+    file.seekg(0, std::ios::beg); // set read pointer to the beginning of file stream
+    file.read(reinterpret_cast<char*>(&data[0]), size); // read file stream into char array 'data'
     file.close();
 
     // de-serialize byte stream
@@ -648,7 +649,7 @@ bool Stars::readStarCache(const std::string& sCacheFile) {
 
     VistaType::uint32 catalogsToLoad = 0;
     for (const auto& mCatalog : mCatalogs) {
-      catalogsToLoad += (uint32_t)std::pow(2, (int)mCatalog.first);
+      catalogsToLoad += static_cast<uint32_t>(std::pow(2, static_cast<int>(mCatalog.first)));
     }
 
     if (catalogs != catalogsToLoad) {
@@ -688,19 +689,19 @@ void Stars::buildStarVAO() {
 
   for (auto it = mStars.begin(); it != mStars.end(); ++it, c += iElementCount) {
     // use B and V magnitude to retrieve the according color
-    const float minIdx(-0.4f);
-    const float maxIdx(2.0f);
-    const float step(0.05f);
+    const float minIdx(-0.4F);
+    const float maxIdx(2.0F);
+    const float step(0.05F);
     float       bvIndex = std::min(maxIdx, std::max(minIdx, it->mBMagnitude - it->mVMagnitude));
-    float       normalizedIndex = (bvIndex - minIdx) / (maxIdx - minIdx) / step + 0.5f;
-    VistaColor  color           = mSpectralColors[(int)normalizedIndex];
+    float       normalizedIndex = (bvIndex - minIdx) / (maxIdx - minIdx) / step + 0.5F;
+    VistaColor  color           = mSpectralColors[static_cast<int>(normalizedIndex)];
 
     // distance in parsec --- some have parallax of zero; assume a
     // large distance in those cases
-    float fDist = 100000.f;
+    float fDist = 100000.F;
 
-    if (it->mParallax > 0.f) {
-      fDist = 1000.f / it->mParallax;
+    if (it->mParallax > 0.F) {
+      fDist = 1000.F / it->mParallax;
     }
 
     data[c]     = it->mDeclination;
@@ -709,7 +710,7 @@ void Stars::buildStarVAO() {
     data[c + 3] = color.GetRed();
     data[c + 4] = color.GetGreen();
     data[c + 5] = color.GetBlue();
-    data[c + 6] = it->mVMagnitude - 5.f * std::log10(fDist / 10.f);
+    data[c + 6] = it->mVMagnitude - 5.F * std::log10(fDist / 10.F);
   }
 
   mStarVBO.Bind(GL_ARRAY_BUFFER);

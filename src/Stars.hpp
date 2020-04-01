@@ -11,6 +11,7 @@
 #include <VistaKernel/GraphicsManager/VistaOpenGLDraw.h>
 #include <VistaOGLExt/VistaBufferObject.h>
 #include <VistaOGLExt/VistaGLSLShader.h>
+#include <VistaOGLExt/VistaTexture.h>
 #include <VistaOGLExt/VistaVertexArrayObject.h>
 
 #include "../../../src/cs-utils/utils.hpp"
@@ -18,8 +19,6 @@
 #include <map>
 #include <memory>
 #include <vector>
-
-class VistaTexture;
 
 namespace csp::stars {
 
@@ -165,17 +164,20 @@ class Stars : public IVistaOpenGLDraw {
   float mLuminanceMultiplicator = 1.f;
 
   static const int cCacheVersion;
-  static const int cColumnMapping[cs::utils::enumCast(CatalogType::eCount)]
-                                 [cs::utils::enumCast(CatalogColumn::eCount)];
 
-  static const std::string cStarsSnippets;
-  static const std::string cStarsVertOnePixel;
-  static const std::string cStarsFragOnePixel;
-  static const std::string cStarsVert;
-  static const std::string cStarsFrag;
-  static const std::string cStarsGeom;
-  static const std::string cBackgroundVert;
-  static const std::string cBackgroundFrag;
+  static constexpr size_t NUM_CATALOGS = cs::utils::enumCast(CatalogType::eCount);
+  static constexpr size_t NUM_COLUMNS = cs::utils::enumCast(CatalogColumn::eCount);
+
+  static const std::array<std::array<int, NUM_COLUMNS>, NUM_CATALOGS> cColumnMapping;
+
+  static const char* cStarsSnippets;
+  static const char* cStarsVertOnePixel;
+  static const char* cStarsFragOnePixel;
+  static const char* cStarsVert;
+  static const char* cStarsFrag;
+  static const char* cStarsGeom;
+  static const char* cBackgroundVert;
+  static const char* cBackgroundFrag;
 };
 
 } // namespace csp::stars

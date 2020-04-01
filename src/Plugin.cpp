@@ -23,7 +23,7 @@ EXPORT_FN cs::core::PluginBase* create() {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 EXPORT_FN void destroy(cs::core::PluginBase* pluginBase) {
-  delete pluginBase;
+  delete pluginBase; // NOLINT(cppcoreguidelines-owning-memory)
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -155,10 +155,11 @@ void Plugin::init() {
       "second determines wich end to set: Zero for the minimum magnitude; one for the maximum "
       "magnitude.",
       std::function([this](double val, double handle) {
-        if (handle == 0.0)
+        if (handle == 0.0) {
           mStars->setMinMagnitude(static_cast<float>(val));
-        else
+        } else {
           mStars->setMaxMagnitude(static_cast<float>(val));
+        }
       }));
 
   mGuiManager->getGui()->registerCallback("stars.setDrawMode0",
@@ -226,15 +227,15 @@ void Plugin::update() {
   float fIntensity = mGraphicsEngine->pApproximateSceneBrightness.get();
 
   if (mGraphicsEngine->pEnableHDR.get()) {
-    fIntensity = 1.f;
+    fIntensity = 1.F;
   }
 
   mStars->setLuminanceMultiplicator(
       static_cast<float>(fIntensity * (mProperties->mLuminanceMultiplicator.get())));
   mStars->setBackgroundColor1(VistaColor(
-      0.5f, 0.8f, 1.f, 0.3f * fIntensity * (mProperties->mEnableCelestialGrid.get() ? 1.f : 0.f)));
+      0.5F, 0.8F, 1.F, 0.3F * fIntensity * (mProperties->mEnableCelestialGrid.get() ? 1.F : 0.F)));
   mStars->setBackgroundColor2(VistaColor(
-      0.5f, 1.f, 0.8f, 0.3f * fIntensity * (mProperties->mEnableStarFigures.get() ? 1.f : 0.f)));
+      0.5F, 1.F, 0.8F, 0.3F * fIntensity * (mProperties->mEnableStarFigures.get() ? 1.F : 0.F)));
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
