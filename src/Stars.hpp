@@ -166,7 +166,7 @@ class Stars : public IVistaOpenGLDraw {
   static const int cCacheVersion;
 
   static constexpr size_t NUM_CATALOGS = cs::utils::enumCast(CatalogType::eCount);
-  static constexpr size_t NUM_COLUMNS = cs::utils::enumCast(CatalogColumn::eCount);
+  static constexpr size_t NUM_COLUMNS  = cs::utils::enumCast(CatalogColumn::eCount);
 
   static const std::array<std::array<int, NUM_COLUMNS>, NUM_CATALOGS> cColumnMapping;
 
