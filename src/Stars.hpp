@@ -158,10 +158,10 @@ class Stars : public IVistaOpenGLDraw {
 
   bool  mShaderDirty            = true;
   bool  mEnableHDR              = true;
-  float mSolidAngle             = 0.000005f;
-  float mMinMagnitude           = -5.f;
-  float mMaxMagnitude           = 15.f;
-  float mLuminanceMultiplicator = 1.f;
+  float mSolidAngle             = 0.000005F;
+  float mMinMagnitude           = -5.F;
+  float mMaxMagnitude           = 15.F;
+  float mLuminanceMultiplicator = 1.F;
 
   static const int cCacheVersion;
 
