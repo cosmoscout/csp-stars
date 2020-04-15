@@ -90,15 +90,15 @@ class Stars : public IVistaOpenGLDraw {
   /// Adds a skydome texture. The given texture is projected via equirectangular projection onto the
   /// background and blended additively.
   /// @param sFilename    A path to an uncompressed TGA image or "" to disable this image.
-  void setBackgroundTexture1(const std::string& filename);
-  void setBackgroundTexture2(const std::string& filename);
+  void setBackgroundTexture1(std::string const& filename);
+  void setBackgroundTexture2(std::string const& filename);
 
   /// Colorizes the skydome texture. Since the textures are blended additively, the alpha component
   /// modulates the brightness only.
   /// @param cValue    A RGBA color.
-  void              setBackgroundColor1(const VistaColor& value);
+  void              setBackgroundColor1(VistaColor const& value);
   const VistaColor& getBackgroundColor1() const;
-  void              setBackgroundColor2(const VistaColor& value);
+  void              setBackgroundColor2(VistaColor const& value);
   const VistaColor& getBackgroundColor2() const;
 
   /// Sets the star texture. This texture should be a small (e.g. 64x64) image used for every star.
@@ -122,10 +122,10 @@ class Stars : public IVistaOpenGLDraw {
   };
 
   /// Called by the constructors.
-  void init(const std::string& textureFile, const std::string& cacheFile);
+  void init(std::string const& textureFile, std::string const& cacheFile);
 
   /// Reads star data from binary file.
-  bool readStarsFromCatalog(CatalogType type, const std::string& filename);
+  bool readStarsFromCatalog(CatalogType type, std::string const& filename);
 
   /// Writes internal star data read from catalog into a binary file.
   void writeStarCache(const std::string& cacheFile) const;

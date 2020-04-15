@@ -178,7 +178,7 @@ const VistaColor& Stars::getBackgroundColor2() const {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Stars::setStarTexture(const std::string& filename) {
+void Stars::setStarTexture(std::string const& filename) {
   if (!filename.empty()) {
     mStarTexture = cs::graphics::TextureLoader::loadFromFile(filename);
   }
@@ -186,7 +186,7 @@ void Stars::setStarTexture(const std::string& filename) {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Stars::setBackgroundTexture1(const std::string& filename) {
+void Stars::setBackgroundTexture1(std::string const& filename) {
   if (!filename.empty()) {
     mBackgroundTexture1 = cs::graphics::TextureLoader::loadFromFile(filename);
   }
@@ -194,7 +194,7 @@ void Stars::setBackgroundTexture1(const std::string& filename) {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Stars::setBackgroundTexture2(const std::string& filename) {
+void Stars::setBackgroundTexture2(std::string const& filename) {
   if (!filename.empty()) {
     mBackgroundTexture2 = cs::graphics::TextureLoader::loadFromFile(filename);
   }
@@ -382,7 +382,7 @@ bool Stars::GetBoundingBox(VistaBoundingBox& oBoundingBox) {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Stars::init(const std::string& sStarTextureFile, const std::string& sCacheFile) {
+void Stars::init(std::string const& sStarTextureFile, std::string const& sCacheFile) {
   // spectral colors from B-V index -0.4 to 2.0 in steps of 0.05
   // values from  http://www.vendian.org/mncharity/dir3/starcolor/details.html
   mSpectralColors.emplace_back(VistaColor(0x9bb2ff));
@@ -474,7 +474,7 @@ void Stars::init(const std::string& sStarTextureFile, const std::string& sCacheF
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool Stars::readStarsFromCatalog(CatalogType type, const std::string& filename) {
+bool Stars::readStarsFromCatalog(CatalogType type, std::string const& filename) {
   bool success = false;
   spdlog::info("Reading star catalog '{}'.", filename);
 
@@ -515,7 +515,7 @@ bool Stars::readStarsFromCatalog(CatalogType type, const std::string& filename) 
         int tmp{};
         if (type != CatalogType::eHipparcos && loadHipparcos &&
             fromString<int>(items[cColumnMapping.at(cs::utils::enumCast(
-                                type))[cs::utils::enumCast(CatalogColumn::eHipp)]],
+                                type)).at(cs::utils::enumCast(CatalogColumn::eHipp))],
                 tmp)) {
           continue;
         }
@@ -544,7 +544,7 @@ bool Stars::readStarsFromCatalog(CatalogType type, const std::string& filename) 
         if (cColumnMapping.at(
                 cs::utils::enumCast(type))[cs::utils::enumCast(CatalogColumn::ePara)] > 0) {
           if (!fromString<float>(items[cColumnMapping.at(cs::utils::enumCast(
-                                     type))[cs::utils::enumCast(CatalogColumn::ePara)]],
+                                     type)).at(cs::utils::enumCast(CatalogColumn::ePara))],
                   star.mParallax)) {
             star.mParallax = 0;
           }
