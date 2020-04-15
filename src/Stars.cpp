@@ -68,7 +68,7 @@ const int Stars::cCacheVersion = 3;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Stars::Stars(std::map<CatalogType, std::string> catalogs, const std::string& starTexture,
+Stars::Stars(std::map<CatalogType, std::string> catalogs, std::string const& starTexture,
     const std::string& cacheFile)
     : mCatalogs(std::move(catalogs)) {
   init(starTexture, cacheFile);
