@@ -514,8 +514,8 @@ bool Stars::readStarsFromCatalog(CatalogType type, std::string const& filename) 
         // skip if part of hipparcos catalogue
         int tmp{};
         if (type != CatalogType::eHipparcos && loadHipparcos &&
-            fromString<int>(items[cColumnMapping.at(cs::utils::enumCast(
-                                type)).at(cs::utils::enumCast(CatalogColumn::eHipp))],
+            fromString<int>(items[cColumnMapping.at(cs::utils::enumCast(type))
+                                      .at(cs::utils::enumCast(CatalogColumn::eHipp))],
                 tmp)) {
           continue;
         }
@@ -543,8 +543,8 @@ bool Stars::readStarsFromCatalog(CatalogType type, std::string const& filename) 
 
         if (cColumnMapping.at(
                 cs::utils::enumCast(type))[cs::utils::enumCast(CatalogColumn::ePara)] > 0) {
-          if (!fromString<float>(items[cColumnMapping.at(cs::utils::enumCast(
-                                     type)).at(cs::utils::enumCast(CatalogColumn::ePara))],
+          if (!fromString<float>(items[cColumnMapping.at(cs::utils::enumCast(type))
+                                           .at(cs::utils::enumCast(CatalogColumn::ePara))],
                   star.mParallax)) {
             star.mParallax = 0;
           }
