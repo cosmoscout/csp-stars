@@ -7,7 +7,11 @@
 #include "Stars.hpp"
 
 #ifdef _WIN32
+
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif
+
 #include <Windows.h>
 #endif
 
@@ -260,10 +264,10 @@ bool Stars::Do() {
     mBackgroundShader.Bind();
     mBackgroundShader.SetUniform(mBackgroundShader.GetUniformLocation("iTexture"), 0);
 
-    float backgroundIntensity = 1.0;
+    float backgroundIntensity = 1.0f;
 
     if (mEnableHDR) {
-      backgroundIntensity = 0.001 * mLuminanceMultiplicator;
+      backgroundIntensity = 0.001f * mLuminanceMultiplicator;
     }
 
     VistaTransformMatrix matMVNoTranslation = matModelView;
@@ -324,7 +328,8 @@ bool Stars::Do() {
   int viewport[4];
   glGetIntegerv(GL_VIEWPORT, viewport);
 
-  mStarShader.SetUniform(mStarShader.GetUniformLocation("uResolution"), viewport[2], viewport[3]);
+  mStarShader.SetUniform(mStarShader.GetUniformLocation("uResolution"),
+      static_cast<float>(viewport[2]), static_cast<float>(viewport[3]));
 
   mStarTexture->Bind(GL_TEXTURE0);
   mStarShader.SetUniform(mStarShader.GetUniformLocation("uStarTexture"), 0);
