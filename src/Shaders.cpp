@@ -10,7 +10,7 @@ namespace csp::stars {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-const std::string Stars::cStarsSnippets = R"(
+const char* Stars::cStarsSnippets = R"(
 float log10(float x) {
     return log(x) / log(10.0);
 }
@@ -47,7 +47,7 @@ vec3 Uncharted2Tonemap(vec3 x) {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-const std::string Stars::cStarsVert = R"(
+const char* Stars::cStarsVert = R"(
 // inputs
 layout(location = 0) in vec2  inDir;
 layout(location = 1) in float inDist;
@@ -81,7 +81,7 @@ void main() {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-const std::string Stars::cStarsGeom = R"(
+const char* Stars::cStarsGeom = R"(
 layout(points) in;
 layout(triangle_strip, max_vertices = 4) out;
 
@@ -153,7 +153,7 @@ void main() {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-const std::string Stars::cStarsFrag = R"(
+const char* Stars::cStarsFrag = R"(
 // inputs
 in vec3  iColor;
 in float iMagnitude;
@@ -203,7 +203,7 @@ void main() {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-const std::string Stars::cStarsVertOnePixel = R"(
+const char* Stars::cStarsVertOnePixel = R"(
 
 // inputs
 layout(location = 0) in vec2  inDir;
@@ -249,7 +249,7 @@ void main() {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-const std::string Stars::cStarsFragOnePixel = R"(
+const char* Stars::cStarsFragOnePixel = R"(
 
 // inputs
 in vec3  vColor;
@@ -307,7 +307,7 @@ void main() {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-const std::string Stars::cBackgroundVert = R"(
+const char* Stars::cBackgroundVert = R"(
 // inputs
 layout(location = 0) in vec2 vPosition;
 
@@ -328,7 +328,7 @@ void main() {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-const std::string Stars::cBackgroundFrag = R"(
+const char* Stars::cBackgroundFrag = R"(
 // inputs
 in vec3 vView;
 

@@ -11,6 +11,7 @@
 #include <VistaKernel/GraphicsManager/VistaOpenGLDraw.h>
 #include <VistaOGLExt/VistaBufferObject.h>
 #include <VistaOGLExt/VistaGLSLShader.h>
+#include <VistaOGLExt/VistaTexture.h>
 #include <VistaOGLExt/VistaVertexArrayObject.h>
 
 #include "../../../src/cs-utils/utils.hpp"
@@ -18,8 +19,6 @@
 #include <map>
 #include <memory>
 #include <vector>
-
-class VistaTexture;
 
 namespace csp::stars {
 
@@ -56,7 +55,7 @@ class Stars : public IVistaOpenGLDraw {
   /// different catalogs!
   /// @param sStarTextureFile     An uncompressed TGA grayscale image used for the stars.
   /// @param sCacheFile           Location for the star cache.
-  Stars(const std::map<CatalogType, std::string>& catalogs, const std::string& starTexture,
+  Stars(std::map<CatalogType, std::string> catalogs, const std::string& starTexture,
       const std::string& cacheFile = "star_cache.dat");
 
   /// Specifies how the stars should be drawn.
@@ -91,15 +90,15 @@ class Stars : public IVistaOpenGLDraw {
   /// Adds a skydome texture. The given texture is projected via equirectangular projection onto the
   /// background and blended additively.
   /// @param sFilename    A path to an uncompressed TGA image or "" to disable this image.
-  void setBackgroundTexture1(const std::string& filename);
-  void setBackgroundTexture2(const std::string& filename);
+  void setBackgroundTexture1(std::string const& filename);
+  void setBackgroundTexture2(std::string const& filename);
 
   /// Colorizes the skydome texture. Since the textures are blended additively, the alpha component
   /// modulates the brightness only.
   /// @param cValue    A RGBA color.
-  void              setBackgroundColor1(const VistaColor& value);
+  void              setBackgroundColor1(VistaColor const& value);
   const VistaColor& getBackgroundColor1() const;
-  void              setBackgroundColor2(const VistaColor& value);
+  void              setBackgroundColor2(VistaColor const& value);
   const VistaColor& getBackgroundColor2() const;
 
   /// Sets the star texture. This texture should be a small (e.g. 64x64) image used for every star.
@@ -110,7 +109,7 @@ class Stars : public IVistaOpenGLDraw {
   bool Do() override;
 
   /// This method should return the bounding box of the openGL object you draw in the method Do().
-  bool GetBoundingBox(VistaBoundingBox& bb) override;
+  bool GetBoundingBox(VistaBoundingBox& oBoundingBox) override;
 
  private:
   /// Data structure of one record from star catalog.
@@ -123,10 +122,10 @@ class Stars : public IVistaOpenGLDraw {
   };
 
   /// Called by the constructors.
-  void init(const std::string& textureFile, const std::string& cacheFile);
+  void init(std::string const& textureFile, std::string const& cacheFile);
 
   /// Reads star data from binary file.
-  bool readStarsFromCatalog(CatalogType type, const std::string& filename);
+  bool readStarsFromCatalog(CatalogType type, std::string const& filename);
 
   /// Writes internal star data read from catalog into a binary file.
   void writeStarCache(const std::string& cacheFile) const;
@@ -159,23 +158,26 @@ class Stars : public IVistaOpenGLDraw {
 
   bool  mShaderDirty            = true;
   bool  mEnableHDR              = true;
-  float mSolidAngle             = 0.000005f;
-  float mMinMagnitude           = -5.f;
-  float mMaxMagnitude           = 15.f;
-  float mLuminanceMultiplicator = 1.f;
+  float mSolidAngle             = 0.000005F;
+  float mMinMagnitude           = -5.F;
+  float mMaxMagnitude           = 15.F;
+  float mLuminanceMultiplicator = 1.F;
 
   static const int cCacheVersion;
-  static const int cColumnMapping[cs::utils::enumCast(CatalogType::eCount)]
-                                 [cs::utils::enumCast(CatalogColumn::eCount)];
 
-  static const std::string cStarsSnippets;
-  static const std::string cStarsVertOnePixel;
-  static const std::string cStarsFragOnePixel;
-  static const std::string cStarsVert;
-  static const std::string cStarsFrag;
-  static const std::string cStarsGeom;
-  static const std::string cBackgroundVert;
-  static const std::string cBackgroundFrag;
+  static constexpr size_t NUM_CATALOGS = cs::utils::enumCast(CatalogType::eCount);
+  static constexpr size_t NUM_COLUMNS  = cs::utils::enumCast(CatalogColumn::eCount);
+
+  static const std::array<std::array<int, NUM_COLUMNS>, NUM_CATALOGS> cColumnMapping;
+
+  static const char* cStarsSnippets;
+  static const char* cStarsVertOnePixel;
+  static const char* cStarsFragOnePixel;
+  static const char* cStarsVert;
+  static const char* cStarsFrag;
+  static const char* cStarsGeom;
+  static const char* cBackgroundVert;
+  static const char* cBackgroundFrag;
 };
 
 } // namespace csp::stars

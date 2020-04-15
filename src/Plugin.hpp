@@ -24,7 +24,7 @@ class Plugin : public cs::core::PluginBase {
     cs::utils::Property<bool>   mEnabled                = true;
     cs::utils::Property<bool>   mEnableCelestialGrid    = false;
     cs::utils::Property<bool>   mEnableStarFigures      = false;
-    cs::utils::Property<double> mLuminanceMultiplicator = 1.f;
+    cs::utils::Property<double> mLuminanceMultiplicator = 1.F;
   };
 
   struct Settings {
