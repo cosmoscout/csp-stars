@@ -580,7 +580,7 @@ bool Stars::readStarsFromCatalog(CatalogType type, const std::string& filename) 
 
 void Stars::writeStarCache(const std::string& sCacheFile) const {
   VistaType::uint32 catalogs = 0;
-  for (const auto& mCatalog : mCatalogs) {
+  for (auto const& mCatalog : mCatalogs) {
     catalogs += static_cast<uint32_t>(std::pow(2, static_cast<int>(mCatalog.first)));
   }
 
