@@ -39,8 +39,6 @@ class Plugin : public cs::core::PluginBase {
     std::optional<std::string> mTycho2Catalog;
   };
 
-  Plugin();
-
   void init() override;
   void deInit() override;
 
@@ -51,7 +49,7 @@ class Plugin : public cs::core::PluginBase {
   std::unique_ptr<Stars>                          mStars;
   std::shared_ptr<cs::scene::CelestialAnchorNode> mStarsTransform;
   std::unique_ptr<VistaOpenGLNode>                mStarsNode;
-  std::shared_ptr<Properties>                     mProperties;
+  std::shared_ptr<Properties>                     mProperties = std::make_shared<Properties>();
 
   int mEnableHDRConnection = -1;
 };
