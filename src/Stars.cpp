@@ -6,16 +6,13 @@
 
 #include "Stars.hpp"
 
-#ifdef _WIN32
-
-#ifndef NOMINMAX
-#define NOMINMAX
-#endif
-
-#include <Windows.h>
-#endif
+#include "logger.hpp"
 
 #include "../../../src/cs-graphics/TextureLoader.hpp"
+
+#ifdef _WIN32
+#include <Windows.h>
+#endif
 
 #include <VistaInterProcComm/Connections/VistaByteBufferDeSerializer.h>
 #include <VistaInterProcComm/Connections/VistaByteBufferSerializer.h>
@@ -28,7 +25,6 @@
 #include <VistaOGLExt/VistaTexture.h>
 #include <VistaOGLExt/VistaVertexArrayObject.h>
 #include <VistaTools/tinyXML/tinyxml.h>
-#include <spdlog/spdlog.h>
 
 #include <fstream>
 #include <utility>
@@ -453,14 +449,14 @@ void Stars::init(std::string const& sStarTextureFile, std::string const& sCacheF
       if (mCatalogs.find(CatalogType::eTycho) == mCatalogs.end()) {
         readStarsFromCatalog(it->first, it->second);
       } else {
-        spdlog::warn("Failed to load Tycho2 catalog: Tycho already loaded!");
+        logger()->warn("Failed to load Tycho2 catalog: Tycho already loaded!");
       }
     }
 
     if (!mStars.empty()) {
       writeStarCache(sCacheFile);
     } else {
-      spdlog::warn("Loaded no stars! Stars will not work properly.");
+      logger()->warn("Loaded no stars! Stars will not work properly.");
     }
   }
 
@@ -476,14 +472,14 @@ void Stars::init(std::string const& sStarTextureFile, std::string const& sCacheF
 
 bool Stars::readStarsFromCatalog(CatalogType type, std::string const& filename) {
   bool success = false;
-  spdlog::info("Reading star catalog '{}'.", filename);
+  logger()->info("Reading star catalog '{}'.", filename);
 
   std::ifstream file;
 
   try {
     file.open(filename.c_str(), std::ifstream::in);
   } catch (std::exception& e) {
-    spdlog::error("Failed to open catalog file '{}': {}", filename, e.what());
+    logger()->error("Failed to open catalog file '{}': {}", filename, e.what());
   }
 
   if (file.is_open()) {
@@ -562,15 +558,15 @@ bool Stars::readStarsFromCatalog(CatalogType type, std::string const& filename) 
 
       // print progress status
       if (mStars.size() % 10000 == 0) {
-        spdlog::info("Read {} stars so far...", mStars.size());
+        logger()->info("Read {} stars so far...", mStars.size());
       }
     }
     file.close();
     success = true;
 
-    spdlog::info("Read a total of {} stars.", mStars.size());
+    logger()->info("Read a total of {} stars.", mStars.size());
   } else {
-    spdlog::error("Failed to load stars: Cannot open catalog file '{}'!", filename);
+    logger()->error("Failed to load stars: Cannot open catalog file '{}'!", filename);
   }
 
   return success;
@@ -605,12 +601,12 @@ void Stars::writeStarCache(const std::string& sCacheFile) const {
   file.open(sCacheFile.c_str(), std::ios::out | std::ios::binary);
   if (file.is_open()) {
     // write serialized star data
-    spdlog::info("Writing {} stars ({} bytes) into '{}'.", mStars.size(),
+    logger()->info("Writing {} stars ({} bytes) into '{}'.", mStars.size(),
         serializer.GetBufferSize(), sCacheFile);
     file.write(reinterpret_cast<const char*>(serializer.GetBuffer()), serializer.GetBufferSize());
     file.close();
   } else {
-    spdlog::error(
+    logger()->error(
         "Failed to write binary star data: Cannot open file '{}' for writing!", sCacheFile);
   }
 }
@@ -668,13 +664,13 @@ bool Stars::readStarCache(const std::string& sCacheFile) {
 
       // print progress status
       if (mStars.size() % 100000 == 0) {
-        spdlog::info("Read {} stars so far...", mStars.size());
+        logger()->info("Read {} stars so far...", mStars.size());
       }
     }
 
     success = true;
 
-    spdlog::info("Read a total of {} stars.", mStars.size());
+    logger()->info("Read a total of {} stars.", mStars.size());
   }
 
   return success;
