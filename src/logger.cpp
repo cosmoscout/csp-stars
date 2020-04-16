@@ -14,7 +14,7 @@ namespace csp::stars {
 
 spdlog::logger& logger() {
   static auto logger = cs::utils::createLogger("csp-stars");
-  return *logger.get();
+  return *logger;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
