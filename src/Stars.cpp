@@ -26,8 +26,8 @@
 #include <VistaOGLExt/VistaVertexArrayObject.h>
 #include <VistaTools/tinyXML/tinyxml.h>
 
+#include <array>
 #include <fstream>
-#include <utility>
 
 namespace csp::stars {
 
