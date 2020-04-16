@@ -60,7 +60,7 @@ void from_json(const nlohmann::json& j, Plugin::Settings& o) {
 
 void Plugin::init() {
 
-  logger()->info("Loading plugin...");
+  logger().info("Loading plugin...");
 
   // Read star settings.
   mPluginSettings = mAllSettings->mPlugins.at("csp-stars");
@@ -177,13 +177,13 @@ void Plugin::init() {
   mEnableHDRConnection = mGraphicsEngine->pEnableHDR.connectAndTouch(
       [this](bool value) { mStars->setEnableHDR(value); });
 
-  logger()->info("Loading done.");
+  logger().info("Loading done.");
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void Plugin::deInit() {
-  logger()->info("Unloading plugin...");
+  logger().info("Unloading plugin...");
 
   mSolarSystem->unregisterAnchor(mStarsTransform);
   mSceneGraph->GetRoot()->DisconnectChild(mStarsTransform.get());
@@ -206,7 +206,7 @@ void Plugin::deInit() {
   mGuiManager->getGui()->unregisterCallback("stars.setEnableGrid");
   mGuiManager->getGui()->unregisterCallback("stars.setEnableFigures");
 
-  logger()->info("Unloading done.");
+  logger().info("Unloading done.");
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
