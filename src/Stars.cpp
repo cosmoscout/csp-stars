@@ -44,6 +44,22 @@ bool fromString(std::string const& v, T& out) {
   return (iss.rdstate() & std::stringstream::failbit) == 0;
 }
 
+// spectral colors from B-V index -0.4 to 2.0 in steps of 0.05
+// values from  http://www.vendian.org/mncharity/dir3/starcolor/details.html
+const std::vector<VistaColor> sSpectralColors = {VistaColor(0x9bb2ff), VistaColor(0x9eb5ff),
+    VistaColor(0xa3b9ff), VistaColor(0xaabfff), VistaColor(0xb2c5ff), VistaColor(0xbbccff),
+    VistaColor(0xc4d2ff), VistaColor(0xccd8ff), VistaColor(0xd3ddff), VistaColor(0xdae2ff),
+    VistaColor(0xdfe5ff), VistaColor(0xe4e9ff), VistaColor(0xe9ecff), VistaColor(0xeeefff),
+    VistaColor(0xf3f2ff), VistaColor(0xf8f6ff), VistaColor(0xfef9ff), VistaColor(0xfff9fb),
+    VistaColor(0xfff7f5), VistaColor(0xfff5ef), VistaColor(0xfff3ea), VistaColor(0xfff1e5),
+    VistaColor(0xffefe0), VistaColor(0xffeddb), VistaColor(0xffebd6), VistaColor(0xffe8ce),
+    VistaColor(0xffe6ca), VistaColor(0xffe5c6), VistaColor(0xffe3c3), VistaColor(0xffe2bf),
+    VistaColor(0xffe0bb), VistaColor(0xffdfb8), VistaColor(0xffddb4), VistaColor(0xffdbb0),
+    VistaColor(0xffdaad), VistaColor(0xffd8a9), VistaColor(0xffd6a5), VistaColor(0xffd29c),
+    VistaColor(0xffd096), VistaColor(0xffcc8f), VistaColor(0xffc885), VistaColor(0xffc178),
+    VistaColor(0xffb765), VistaColor(0xffa94b), VistaColor(0xff9523), VistaColor(0xff7b00),
+    VistaColor(0xff5200)};
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 } // namespace
@@ -64,10 +80,67 @@ const int Stars::cCacheVersion = 3;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Stars::Stars(std::map<CatalogType, std::string> catalogs, std::string const& starTexture,
-    const std::string& cacheFile)
-    : mCatalogs(std::move(catalogs)) {
-  init(starTexture, cacheFile);
+void Stars::setCatalogs(std::map<Stars::CatalogType, std::string> catalogs) {
+  if (mCatalogs != catalogs) {
+
+    mCatalogs = std::move(catalogs);
+
+    // Clear stars first.
+    mStars.clear();
+
+    // Read star catalogs.
+    if (!readStarCache(mCacheFile)) {
+      std::map<CatalogType, std::string>::const_iterator it;
+
+      it = mCatalogs.find(CatalogType::eHipparcos);
+      if (it != mCatalogs.end()) {
+        readStarsFromCatalog(it->first, it->second);
+      }
+
+      it = mCatalogs.find(CatalogType::eTycho);
+      if (it != mCatalogs.end()) {
+        readStarsFromCatalog(it->first, it->second);
+      }
+
+      it = mCatalogs.find(CatalogType::eTycho2);
+      if (it != mCatalogs.end()) {
+        // do not load tycho and tycho 2
+        if (mCatalogs.find(CatalogType::eTycho) == mCatalogs.end()) {
+          readStarsFromCatalog(it->first, it->second);
+        } else {
+          logger().warn("Failed to load Tycho2 catalog: Tycho already loaded!");
+        }
+      }
+
+      if (!mStars.empty()) {
+        writeStarCache(mCacheFile);
+      } else {
+        logger().warn("Loaded no stars! Stars will not work properly.");
+      }
+    }
+
+    // Create buffers,
+    buildStarVAO();
+    buildBackgroundVAO();
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+std::map<Stars::CatalogType, std::string> const& Stars::getCatalogs() const {
+  return mCatalogs;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Stars::setCacheFile(std::string cacheFile) {
+  mCacheFile = cacheFile;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+std::string const& Stars::getCacheFile() const {
+  return mCacheFile;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -150,49 +223,64 @@ float Stars::getLuminanceMultiplicator() const {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Stars::setBackgroundColor1(const VistaColor& value) {
+void Stars::setCelestialGridColor(const VistaColor& value) {
   mBackgroundColor1 = value;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-const VistaColor& Stars::getBackgroundColor1() const {
+const VistaColor& Stars::getCelestialGridColor() const {
   return mBackgroundColor1;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Stars::setBackgroundColor2(const VistaColor& value) {
+void Stars::setStarFiguresColor(const VistaColor& value) {
   mBackgroundColor2 = value;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-const VistaColor& Stars::getBackgroundColor2() const {
+const VistaColor& Stars::getStarFiguresColor() const {
   return mBackgroundColor2;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void Stars::setStarTexture(std::string const& filename) {
-  if (!filename.empty()) {
-    mStarTexture = cs::graphics::TextureLoader::loadFromFile(filename);
+  if (filename != mStarTextureFile) {
+    mStarTextureFile = filename;
+    if (filename.empty()) {
+      mStarTexture.reset();
+    } else {
+      mStarTexture = cs::graphics::TextureLoader::loadFromFile(filename);
+    }
   }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Stars::setBackgroundTexture1(std::string const& filename) {
-  if (!filename.empty()) {
-    mBackgroundTexture1 = cs::graphics::TextureLoader::loadFromFile(filename);
+void Stars::setCelestialGridTexture(std::string const& filename) {
+  if (filename != mCelestialGridTextureFile) {
+    mCelestialGridTextureFile = filename;
+    if (filename.empty()) {
+      mCelestialGridTexture.reset();
+    } else {
+      mCelestialGridTexture = cs::graphics::TextureLoader::loadFromFile(filename);
+    }
   }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Stars::setBackgroundTexture2(std::string const& filename) {
-  if (!filename.empty()) {
-    mBackgroundTexture2 = cs::graphics::TextureLoader::loadFromFile(filename);
+void Stars::setStarFiguresTexture(std::string const& filename) {
+  if (filename != mStarFiguresTextureFile) {
+    mStarFiguresTextureFile = filename;
+    if (filename.empty()) {
+      mStarFiguresTexture.reset();
+    } else {
+      mStarFiguresTexture = cs::graphics::TextureLoader::loadFromFile(filename);
+    }
   }
 }
 
@@ -254,8 +342,8 @@ bool Stars::Do() {
   }
 
   // draw background
-  if ((mBackgroundTexture1 && mBackgroundColor1[3] != 0.F) ||
-      (mBackgroundTexture2 && mBackgroundColor2[3] != 0.F)) {
+  if ((mCelestialGridTexture && mBackgroundColor1[3] != 0.F) ||
+      (mStarFiguresTexture && mBackgroundColor2[3] != 0.F)) {
     mBackgroundVAO.Bind();
     mBackgroundShader.Bind();
     mBackgroundShader.SetUniform(mBackgroundShader.GetUniformLocation("iTexture"), 0);
@@ -283,22 +371,22 @@ bool Stars::Do() {
     loc = mBackgroundShader.GetUniformLocation("uInvMV");
     glUniformMatrix4fv(loc, 1, GL_FALSE, matInverseMV.GetData());
 
-    if (mBackgroundTexture1 && mBackgroundColor1[3] != 0.F) {
+    if (mCelestialGridTexture && mBackgroundColor1[3] != 0.F) {
       mBackgroundShader.SetUniform(mBackgroundShader.GetUniformLocation("cColor"),
           mBackgroundColor1[0], mBackgroundColor1[1], mBackgroundColor1[2],
           mBackgroundColor1[3] * backgroundIntensity);
-      mBackgroundTexture1->Bind(GL_TEXTURE0);
+      mCelestialGridTexture->Bind(GL_TEXTURE0);
       glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-      mBackgroundTexture1->Unbind(GL_TEXTURE0);
+      mCelestialGridTexture->Unbind(GL_TEXTURE0);
     }
 
-    if (mBackgroundTexture2 && mBackgroundColor2[3] != 0.F) {
+    if (mStarFiguresTexture && mBackgroundColor2[3] != 0.F) {
       mBackgroundShader.SetUniform(mBackgroundShader.GetUniformLocation("cColor"),
           mBackgroundColor2[0], mBackgroundColor2[1], mBackgroundColor2[2],
           mBackgroundColor2[3] * backgroundIntensity);
-      mBackgroundTexture2->Bind(GL_TEXTURE0);
+      mStarFiguresTexture->Bind(GL_TEXTURE0);
       glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-      mBackgroundTexture2->Unbind(GL_TEXTURE0);
+      mStarFiguresTexture->Unbind(GL_TEXTURE0);
     }
 
     mBackgroundShader.Release();
@@ -374,98 +462,6 @@ bool Stars::GetBoundingBox(VistaBoundingBox& oBoundingBox) {
   oBoundingBox.SetBounds(fMin.data(), fMax.data());
 
   return true;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void Stars::init(std::string const& sStarTextureFile, std::string const& sCacheFile) {
-  // spectral colors from B-V index -0.4 to 2.0 in steps of 0.05
-  // values from  http://www.vendian.org/mncharity/dir3/starcolor/details.html
-  mSpectralColors.emplace_back(VistaColor(0x9bb2ff));
-  mSpectralColors.emplace_back(VistaColor(0x9eb5ff));
-  mSpectralColors.emplace_back(VistaColor(0xa3b9ff));
-  mSpectralColors.emplace_back(VistaColor(0xaabfff));
-  mSpectralColors.emplace_back(VistaColor(0xb2c5ff));
-  mSpectralColors.emplace_back(VistaColor(0xbbccff));
-  mSpectralColors.emplace_back(VistaColor(0xc4d2ff));
-  mSpectralColors.emplace_back(VistaColor(0xccd8ff));
-  mSpectralColors.emplace_back(VistaColor(0xd3ddff));
-  mSpectralColors.emplace_back(VistaColor(0xdae2ff));
-  mSpectralColors.emplace_back(VistaColor(0xdfe5ff));
-  mSpectralColors.emplace_back(VistaColor(0xe4e9ff));
-  mSpectralColors.emplace_back(VistaColor(0xe9ecff));
-  mSpectralColors.emplace_back(VistaColor(0xeeefff));
-  mSpectralColors.emplace_back(VistaColor(0xf3f2ff));
-  mSpectralColors.emplace_back(VistaColor(0xf8f6ff));
-  mSpectralColors.emplace_back(VistaColor(0xfef9ff));
-  mSpectralColors.emplace_back(VistaColor(0xfff9fb));
-  mSpectralColors.emplace_back(VistaColor(0xfff7f5));
-  mSpectralColors.emplace_back(VistaColor(0xfff5ef));
-  mSpectralColors.emplace_back(VistaColor(0xfff3ea));
-  mSpectralColors.emplace_back(VistaColor(0xfff1e5));
-  mSpectralColors.emplace_back(VistaColor(0xffefe0));
-  mSpectralColors.emplace_back(VistaColor(0xffeddb));
-  mSpectralColors.emplace_back(VistaColor(0xffebd6));
-  mSpectralColors.emplace_back(VistaColor(0xffe8ce));
-  mSpectralColors.emplace_back(VistaColor(0xffe6ca));
-  mSpectralColors.emplace_back(VistaColor(0xffe5c6));
-  mSpectralColors.emplace_back(VistaColor(0xffe3c3));
-  mSpectralColors.emplace_back(VistaColor(0xffe2bf));
-  mSpectralColors.emplace_back(VistaColor(0xffe0bb));
-  mSpectralColors.emplace_back(VistaColor(0xffdfb8));
-  mSpectralColors.emplace_back(VistaColor(0xffddb4));
-  mSpectralColors.emplace_back(VistaColor(0xffdbb0));
-  mSpectralColors.emplace_back(VistaColor(0xffdaad));
-  mSpectralColors.emplace_back(VistaColor(0xffd8a9));
-  mSpectralColors.emplace_back(VistaColor(0xffd6a5));
-  mSpectralColors.emplace_back(VistaColor(0xffd29c));
-  mSpectralColors.emplace_back(VistaColor(0xffd096));
-  mSpectralColors.emplace_back(VistaColor(0xffcc8f));
-  mSpectralColors.emplace_back(VistaColor(0xffc885));
-  mSpectralColors.emplace_back(VistaColor(0xffc178));
-  mSpectralColors.emplace_back(VistaColor(0xffb765));
-  mSpectralColors.emplace_back(VistaColor(0xffa94b));
-  mSpectralColors.emplace_back(VistaColor(0xff9523));
-  mSpectralColors.emplace_back(VistaColor(0xff7b00));
-  mSpectralColors.emplace_back(VistaColor(0xff5200));
-
-  // read star catalog -------------------------------------------------------
-  if (!readStarCache(sCacheFile)) {
-    std::map<CatalogType, std::string>::const_iterator it;
-
-    it = mCatalogs.find(CatalogType::eHipparcos);
-    if (it != mCatalogs.end()) {
-      readStarsFromCatalog(it->first, it->second);
-    }
-
-    it = mCatalogs.find(CatalogType::eTycho);
-    if (it != mCatalogs.end()) {
-      readStarsFromCatalog(it->first, it->second);
-    }
-
-    it = mCatalogs.find(CatalogType::eTycho2);
-    if (it != mCatalogs.end()) {
-      // do not load tycho and tycho 2
-      if (mCatalogs.find(CatalogType::eTycho) == mCatalogs.end()) {
-        readStarsFromCatalog(it->first, it->second);
-      } else {
-        logger().warn("Failed to load Tycho2 catalog: Tycho already loaded!");
-      }
-    }
-
-    if (!mStars.empty()) {
-      writeStarCache(sCacheFile);
-    } else {
-      logger().warn("Loaded no stars! Stars will not work properly.");
-    }
-  }
-
-  // create texture ----------------------------------------------------------
-  setStarTexture(sStarTextureFile);
-
-  // create buffers ----------------------------------------------------------
-  buildStarVAO();
-  buildBackgroundVAO();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -690,7 +686,7 @@ void Stars::buildStarVAO() {
     const float step(0.05F);
     float       bvIndex = std::min(maxIdx, std::max(minIdx, it->mBMagnitude - it->mVMagnitude));
     float       normalizedIndex = (bvIndex - minIdx) / (maxIdx - minIdx) / step + 0.5F;
-    VistaColor  color           = mSpectralColors[static_cast<int>(normalizedIndex)];
+    VistaColor  color           = sSpectralColors[static_cast<int>(normalizedIndex)];
 
     // distance in parsec --- some have parallax of zero; assume a
     // large distance in those cases

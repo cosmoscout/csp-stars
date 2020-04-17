@@ -47,16 +47,19 @@ class Stars : public IVistaOpenGLDraw {
     eCount
   };
 
-  enum DrawMode { ePoint, eSmoothPoint, eDisc, eSmoothDisc, eSprite };
+  enum class DrawMode { ePoint, eSmoothPoint, eDisc, eSmoothDisc, eSprite };
 
   /// It is possible to load multiple catalogs, currently Hipparcos and any of Tycho or Tycho2 can
-  /// be loaded together. Stars which are in both catalogs will be loaded from Hiparcos. Once
-  /// loaded, the stars will be written to a binary cache file. Delete this file if you want to load
-  /// different catalogs!
-  /// @param sStarTextureFile     An uncompressed TGA grayscale image used for the stars.
-  /// @param sCacheFile           Location for the star cache.
-  Stars(std::map<CatalogType, std::string> catalogs, const std::string& starTexture,
-      const std::string& cacheFile = "star_cache.dat");
+  /// be loaded together. Stars which are in both catalogs will be loaded from Hipparcos. Once
+  /// loaded, the stars will be written to a binary cache file. Subsequent instantiations of this
+  /// class with the same call to setCatalogs() will use the stars from the cache file rather from
+  /// the catalogs.
+  void setCatalogs(std::map<CatalogType, std::string> catalogs);
+  std::map<CatalogType, std::string> const& getCatalogs() const;
+
+  /// Subsequent calls to setCatalogs() will use this cache file. Defaults to "star_cache.dat".
+  void               setCacheFile(std::string cacheFile);
+  std::string const& getCacheFile() const;
 
   /// Specifies how the stars should be drawn.
   void     setDrawMode(DrawMode value);
@@ -90,16 +93,16 @@ class Stars : public IVistaOpenGLDraw {
   /// Adds a skydome texture. The given texture is projected via equirectangular projection onto the
   /// background and blended additively.
   /// @param sFilename    A path to an uncompressed TGA image or "" to disable this image.
-  void setBackgroundTexture1(std::string const& filename);
-  void setBackgroundTexture2(std::string const& filename);
+  void setCelestialGridTexture(std::string const& filename);
+  void setStarFiguresTexture(std::string const& filename);
 
   /// Colorizes the skydome texture. Since the textures are blended additively, the alpha component
   /// modulates the brightness only.
   /// @param cValue    A RGBA color.
-  void              setBackgroundColor1(VistaColor const& value);
-  const VistaColor& getBackgroundColor1() const;
-  void              setBackgroundColor2(VistaColor const& value);
-  const VistaColor& getBackgroundColor2() const;
+  void              setCelestialGridColor(VistaColor const& value);
+  const VistaColor& getCelestialGridColor() const;
+  void              setStarFiguresColor(VistaColor const& value);
+  const VistaColor& getStarFiguresColor() const;
 
   /// Sets the star texture. This texture should be a small (e.g. 64x64) image used for every star.
   /// @param sFilename    A path to an uncompressed grayscale TGA image.
@@ -121,9 +124,6 @@ class Stars : public IVistaOpenGLDraw {
     float mParallax;
   };
 
-  /// Called by the constructors.
-  void init(std::string const& textureFile, std::string const& cacheFile);
-
   /// Reads star data from binary file.
   bool readStarsFromCatalog(CatalogType type, std::string const& filename);
 
@@ -138,8 +138,15 @@ class Stars : public IVistaOpenGLDraw {
   void buildBackgroundVAO();
 
   std::unique_ptr<VistaTexture> mStarTexture;
-  std::unique_ptr<VistaTexture> mBackgroundTexture1;
-  std::unique_ptr<VistaTexture> mBackgroundTexture2;
+  std::string                   mStarTextureFile;
+
+  std::unique_ptr<VistaTexture> mCelestialGridTexture;
+  std::string                   mCelestialGridTextureFile;
+
+  std::unique_ptr<VistaTexture> mStarFiguresTexture;
+  std::string                   mStarFiguresTextureFile;
+
+  std::string mCacheFile = "star_cache.dat";
 
   VistaGLSLShader        mStarShader;
   VistaGLSLShader        mBackgroundShader;
@@ -151,7 +158,6 @@ class Stars : public IVistaOpenGLDraw {
   VistaBufferObject      mBackgroundVBO;
 
   std::vector<Star>                  mStars;
-  std::vector<VistaColor>            mSpectralColors;
   std::map<CatalogType, std::string> mCatalogs;
 
   DrawMode mDrawMode = DrawMode::eSmoothDisc;

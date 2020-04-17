@@ -9,7 +9,7 @@
 
 #include "../../../src/cs-core/PluginBase.hpp"
 #include "../../../src/cs-scene/CelestialAnchorNode.hpp"
-#include "../../../src/cs-utils/Property.hpp"
+#include "../../../src/cs-utils/DefaultProperty.hpp"
 #include "Stars.hpp"
 
 #include <VistaKernel/GraphicsManager/VistaOpenGLNode.h>
@@ -20,23 +20,24 @@ namespace csp::stars {
 /// The starts plugin displays the night sky from star catalogues.
 class Plugin : public cs::core::PluginBase {
  public:
-  struct Properties {
-    cs::utils::Property<bool>   mEnabled                = true;
-    cs::utils::Property<bool>   mEnableCelestialGrid    = false;
-    cs::utils::Property<bool>   mEnableStarFigures      = false;
-    cs::utils::Property<double> mLuminanceMultiplicator = 1.F;
-  };
-
   struct Settings {
-    std::string                mBackgroundTexture1;
-    std::string                mBackgroundTexture2;
-    glm::vec4                  mBackgroundColor1;
-    glm::vec4                  mBackgroundColor2;
-    std::string                mStarTexture;
-    std::optional<std::string> mCacheFile;
-    std::optional<std::string> mHipparcosCatalog;
-    std::optional<std::string> mTychoCatalog;
-    std::optional<std::string> mTycho2Catalog;
+    cs::utils::DefaultProperty<std::string>     mCelestialGridTexture{""};
+    cs::utils::DefaultProperty<std::string>     mStarFiguresTexture{""};
+    cs::utils::DefaultProperty<glm::vec4>       mCelestialGridColor{glm::vec4(0.5F)};
+    cs::utils::DefaultProperty<glm::vec4>       mStarFiguresColor{glm::vec4(0.5F)};
+    std::string                                 mStarTexture;
+    std::optional<std::string>                  mCacheFile;
+    std::optional<std::string>                  mHipparcosCatalog;
+    std::optional<std::string>                  mTychoCatalog;
+    std::optional<std::string>                  mTycho2Catalog;
+    cs::utils::DefaultProperty<bool>            mEnabled{true};
+    cs::utils::DefaultProperty<bool>            mEnableCelestialGrid{false};
+    cs::utils::DefaultProperty<bool>            mEnableStarFigures{false};
+    cs::utils::DefaultProperty<float>           mLuminanceMultiplicator{1.F};
+    cs::utils::DefaultProperty<Stars::DrawMode> mDrawMode{Stars::DrawMode::eSmoothDisc};
+    cs::utils::DefaultProperty<float>           mSize{0.05F};
+    cs::utils::DefaultProperty<float>           mMinMagnitude{-15.F};
+    cs::utils::DefaultProperty<float>           mMaxMagnitude{15.F};
   };
 
   void init() override;
@@ -45,13 +46,16 @@ class Plugin : public cs::core::PluginBase {
   void update() override;
 
  private:
+  void onLoad();
+
   Settings                                        mPluginSettings;
   std::unique_ptr<Stars>                          mStars;
   std::shared_ptr<cs::scene::CelestialAnchorNode> mStarsTransform;
   std::unique_ptr<VistaOpenGLNode>                mStarsNode;
-  std::shared_ptr<Properties>                     mProperties = std::make_shared<Properties>();
 
   int mEnableHDRConnection = -1;
+  int mOnLoadConnection    = -1;
+  int mOnSaveConnection    = -1;
 };
 
 } // namespace csp::stars
