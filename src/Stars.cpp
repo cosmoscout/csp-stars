@@ -46,7 +46,8 @@ bool fromString(std::string const& v, T& out) {
 
 // spectral colors from B-V index -0.4 to 2.0 in steps of 0.05
 // values from  http://www.vendian.org/mncharity/dir3/starcolor/details.html
-const std::vector<VistaColor> sSpectralColors = {VistaColor(0x9bb2ff), VistaColor(0x9eb5ff),
+// NOLINTNEXTLINE(cert-err58-cpp)
+const std::array sSpectralColors = {VistaColor(0x9bb2ff), VistaColor(0x9eb5ff),
     VistaColor(0xa3b9ff), VistaColor(0xaabfff), VistaColor(0xb2c5ff), VistaColor(0xbbccff),
     VistaColor(0xc4d2ff), VistaColor(0xccd8ff), VistaColor(0xd3ddff), VistaColor(0xdae2ff),
     VistaColor(0xdfe5ff), VistaColor(0xe4e9ff), VistaColor(0xe9ecff), VistaColor(0xeeefff),
@@ -134,7 +135,7 @@ std::map<Stars::CatalogType, std::string> const& Stars::getCatalogs() const {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void Stars::setCacheFile(std::string cacheFile) {
-  mCacheFile = cacheFile;
+  mCacheFile = std::move(cacheFile);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -229,19 +230,19 @@ void Stars::setCelestialGridColor(const VistaColor& value) {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-const VistaColor& Stars::getCelestialGridColor() const {
+VistaColor const& Stars::getCelestialGridColor() const {
   return mBackgroundColor1;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Stars::setStarFiguresColor(const VistaColor& value) {
+void Stars::setStarFiguresColor(VistaColor const& value) {
   mBackgroundColor2 = value;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-const VistaColor& Stars::getStarFiguresColor() const {
+VistaColor const& Stars::getStarFiguresColor() const {
   return mBackgroundColor2;
 }
 
@@ -599,6 +600,8 @@ void Stars::writeStarCache(const std::string& sCacheFile) const {
     // write serialized star data
     logger().info("Writing {} stars ({} bytes) into '{}'.", mStars.size(),
         serializer.GetBufferSize(), sCacheFile);
+
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     file.write(reinterpret_cast<const char*>(serializer.GetBuffer()), serializer.GetBufferSize());
     file.close();
   } else {
@@ -617,11 +620,17 @@ bool Stars::readStarCache(const std::string& sCacheFile) {
   file.open(sCacheFile.c_str(),
       std::ios::in | std::ios::binary | std::ios::ate); // ate = set read pointer to end
   if (file.is_open()) {
+
     // read binary data from file
-    int size = static_cast<int>(file.tellg()); // get position of read pointer
+    int                          size = static_cast<int>(file.tellg());
     std::vector<VistaType::byte> data(size);
-    file.seekg(0, std::ios::beg); // set read pointer to the beginning of file stream
-    file.read(reinterpret_cast<char*>(&data[0]), size); // read file stream into char array 'data'
+
+    // set read pointer to the beginning of file stream
+    file.seekg(0, std::ios::beg);
+
+    // read file stream into char array 'data'
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+    file.read(reinterpret_cast<char*>(&data[0]), size);
     file.close();
 
     // de-serialize byte stream
@@ -686,7 +695,7 @@ void Stars::buildStarVAO() {
     const float step(0.05F);
     float       bvIndex = std::min(maxIdx, std::max(minIdx, it->mBMagnitude - it->mVMagnitude));
     float       normalizedIndex = (bvIndex - minIdx) / (maxIdx - minIdx) / step + 0.5F;
-    VistaColor  color           = sSpectralColors[static_cast<int>(normalizedIndex)];
+    VistaColor  color           = sSpectralColors.at(static_cast<int>(normalizedIndex));
 
     // distance in parsec --- some have parallax of zero; assume a
     // large distance in those cases
