@@ -49,8 +49,7 @@ void from_json(nlohmann::json const& j, Plugin::Settings& o) {
   cs::core::Settings::deserialize(j, "luminanceMultiplicator", o.mLuminanceMultiplicator);
   cs::core::Settings::deserialize(j, "drawMode", o.mDrawMode);
   cs::core::Settings::deserialize(j, "size", o.mSize);
-  cs::core::Settings::deserialize(j, "minMagnitude", o.mMinMagnitude);
-  cs::core::Settings::deserialize(j, "maxMagnitude", o.mMaxMagnitude);
+  cs::core::Settings::deserialize(j, "magnitudeRange", o.mMagnitudeRange);
 }
 
 void to_json(nlohmann::json& j, Plugin::Settings const& o) {
@@ -69,8 +68,7 @@ void to_json(nlohmann::json& j, Plugin::Settings const& o) {
   cs::core::Settings::serialize(j, "luminanceMultiplicator", o.mLuminanceMultiplicator);
   cs::core::Settings::serialize(j, "drawMode", o.mDrawMode);
   cs::core::Settings::serialize(j, "size", o.mSize);
-  cs::core::Settings::serialize(j, "minMagnitude", o.mMinMagnitude);
-  cs::core::Settings::serialize(j, "maxMagnitude", o.mMaxMagnitude);
+  cs::core::Settings::serialize(j, "magnitudeRange", o.mMagnitudeRange);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -102,8 +100,10 @@ void Plugin::init() {
   mPluginSettings.mEnabled.connect([this](bool val) { mStarsNode->SetIsEnabled(val); });
   mPluginSettings.mDrawMode.connect([this](Stars::DrawMode val) { mStars->setDrawMode(val); });
   mPluginSettings.mSize.connect([this](float val) { mStars->setSolidAngle(val * 0.0001F); });
-  mPluginSettings.mMinMagnitude.connect([this](float val) { mStars->setMinMagnitude(val); });
-  mPluginSettings.mMaxMagnitude.connect([this](float val) { mStars->setMaxMagnitude(val); });
+  mPluginSettings.mMagnitudeRange.connect([this](glm::vec2 const& val) {
+    mStars->setMinMagnitude(val.x);
+    mStars->setMaxMagnitude(val.y);
+  });
 
   // Add the stars user interface components to the CosmoScout user interface.
   mGuiManager->addSettingsSectionToSideBarFromHTML(
@@ -114,57 +114,80 @@ void Plugin::init() {
   // Register JavaScript callbacks.
   mGuiManager->getGui()->registerCallback("stars.setEnabled",
       "Enables or disables the rendering of stars.",
-      std::function([this](bool value) { mPluginSettings.mEnabled = value; }));
+      std::function([this](bool enable) { mPluginSettings.mEnabled = enable; }));
+  mPluginSettings.mEnabled.connectAndTouch(
+      [this](bool enable) { mGuiManager->setCheckboxValue("stars.setEnabled", enable); });
 
   mGuiManager->getGui()->registerCallback("stars.setEnableGrid",
       "If stars are enabled, this enables the rendering of a background grid in celestial "
       "coordinates.",
-      std::function([this](bool value) { mPluginSettings.mEnableCelestialGrid = value; }));
+      std::function([this](bool enable) { mPluginSettings.mEnableCelestialGrid = enable; }));
+  mPluginSettings.mEnableCelestialGrid.connectAndTouch(
+      [this](bool enable) { mGuiManager->setCheckboxValue("stars.setEnableGrid", enable); });
 
   mGuiManager->getGui()->registerCallback("stars.setEnableFigures",
       "If stars are enabled, this enables the rendering of star figures.",
-      std::function([this](bool value) { mPluginSettings.mEnableStarFigures = value; }));
+      std::function([this](bool enable) { mPluginSettings.mEnableStarFigures = enable; }));
+  mPluginSettings.mEnableStarFigures.connectAndTouch(
+      [this](bool enable) { mGuiManager->setCheckboxValue("stars.setEnableFigures", enable); });
 
   mGuiManager->getGui()->registerCallback("stars.setLuminanceBoost",
       "Adds an artificial brightness boost to the stars.", std::function([this](double value) {
         mPluginSettings.mLuminanceMultiplicator = static_cast<float>(value);
       }));
+  mPluginSettings.mLuminanceMultiplicator.connectAndTouch(
+      [this](float value) { mGuiManager->setSliderValue("stars.setLuminanceBoost", value); });
 
   mGuiManager->getGui()->registerCallback("stars.setSize",
       "Sets the apparent size of stars on screen.",
       std::function([this](double value) { mPluginSettings.mSize = static_cast<float>(value); }));
+  mPluginSettings.mSize.connectAndTouch(
+      [this](float value) { mGuiManager->setSliderValue("stars.setSize", value); });
 
   mGuiManager->getGui()->registerCallback("stars.setMagnitude",
       "Sets the maximum or minimum magnitude for stars. The first value is the magnitude, the "
       "second determines wich end to set: Zero for the minimum magnitude; one for the maximum "
       "magnitude.",
       std::function([this](double val, double handle) {
+        auto range = mPluginSettings.mMagnitudeRange.get();
         if (handle == 0.0) {
-          mPluginSettings.mMinMagnitude = static_cast<float>(val);
+          range.x = static_cast<float>(val);
         } else {
-          mPluginSettings.mMaxMagnitude = static_cast<float>(val);
+          range.y = static_cast<float>(val);
         }
+        mPluginSettings.mMagnitudeRange = range;
       }));
+  mPluginSettings.mMagnitudeRange.connectAndTouch(
+      [this](glm::vec2 const& value) { mGuiManager->setSliderValue("stars.setMagnitude", value); });
 
   mGuiManager->getGui()->registerCallback("stars.setDrawMode0",
       "Enables point draw mode for the stars.",
       std::function([this]() { mPluginSettings.mDrawMode = Stars::DrawMode::ePoint; }));
-
   mGuiManager->getGui()->registerCallback("stars.setDrawMode1",
       "Enables smooth point draw mode for the stars.",
       std::function([this]() { mPluginSettings.mDrawMode = Stars::DrawMode::eSmoothPoint; }));
-
   mGuiManager->getGui()->registerCallback("stars.setDrawMode2",
       "Enables disc draw mode for the stars.",
       std::function([this]() { mPluginSettings.mDrawMode = Stars::DrawMode::eDisc; }));
-
   mGuiManager->getGui()->registerCallback("stars.setDrawMode3",
       "Enables smooth disc draw mode for the stars.",
       std::function([this]() { mPluginSettings.mDrawMode = Stars::DrawMode::eSmoothDisc; }));
-
   mGuiManager->getGui()->registerCallback("stars.setDrawMode4",
       "Enables sprite draw mode for the stars.",
       std::function([this]() { mPluginSettings.mDrawMode = Stars::DrawMode::eSprite; }));
+  mPluginSettings.mDrawMode.connect([this](Stars::DrawMode drawMode) {
+    if (drawMode == Stars::DrawMode::ePoint) {
+      mGuiManager->setRadioChecked("stars.setDrawMode0");
+    } else if (drawMode == Stars::DrawMode::eSmoothPoint) {
+      mGuiManager->setRadioChecked("stars.setDrawMode1");
+    } else if (drawMode == Stars::DrawMode::eDisc) {
+      mGuiManager->setRadioChecked("stars.setDrawMode2");
+    } else if (drawMode == Stars::DrawMode::eSmoothDisc) {
+      mGuiManager->setRadioChecked("stars.setDrawMode3");
+    } else if (drawMode == Stars::DrawMode::eSprite) {
+      mGuiManager->setRadioChecked("stars.setDrawMode4");
+    }
+  });
 
   mEnableHDRConnection = mAllSettings->mGraphics.pEnableHDR.connectAndTouch(
       [this](bool value) { mStars->setEnableHDR(value); });
